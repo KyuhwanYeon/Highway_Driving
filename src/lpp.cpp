@@ -92,8 +92,8 @@ vector<double> PTG(vector<double> start_s,
         goal_d[2] = target_state[5];
     }
 
-    s_coefficients = JMT(start_s,goal_s,T+4*timestep);
-    d_coefficients = JMT(start_d,goal_d,T+4*timestep);
+    s_coefficients = JMT(start_s, goal_s, T + 4 * timestep);
+    d_coefficients = JMT(start_d, goal_d, T + 4 * timestep);
     ptg_coefficients[0] = s_coefficients[0];
     ptg_coefficients[1] = s_coefficients[1];
     ptg_coefficients[2] = s_coefficients[2];
@@ -129,4 +129,24 @@ vector<double> PTG(vector<double> start_s,
     //     best = min(trajectories, key=lambda tr: calculate_cost(tr, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS))
     //     calculate_cost(best, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS, verbose=True)
     //     return best
+}
+
+void global2local_coord_conversion (vector<double> &ptx, vector<double> &pty, double ref_x, double ref_y, double ref_yaw)
+{
+    // local coorinate conversion, after shift, ref_x and ref_y is coordinate (0, 0)
+    for (int i = 0; i < ptx.size(); i++)
+    {
+        printf("previous ptx[i], pty[i]: %lf, %lf \n", ptx[i], pty[i]);
+        printf("ref_x, ref_y : %lf, %lf \n", ref_x, ref_y);
+
+        //shift car reference angle to 0 degrees
+        double shift_x = ptx[i] - ref_x;
+        double shift_y = pty[i] - ref_y;
+        printf("shift_x, shift_y : %lf, %lf \n", shift_x, shift_y);
+
+        ptx[i] = (shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw));
+        pty[i] = (shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw));
+        printf("after ptx[i], pty[i]: %lf, %lf \n\n", ptx[i], pty[i]);
+    }
+    printf("---------------------------------\n");
 }

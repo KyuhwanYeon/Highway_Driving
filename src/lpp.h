@@ -26,5 +26,5 @@ vector<double> PTG(vector<double> start_s,
                    double T
                    );
 
-
+void global2local_coord_conversion (vector<double> &ptx, vector<double> &pty, double ref_x, double ref_y, double ref_yaw);
 #endif // LPP_H
