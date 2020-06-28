@@ -67,38 +67,66 @@ vector<double> JMT(vector<double> &start, vector<double> &end, double T)
 }
 vector<double> PTG(vector<double> start_s,
                    vector<double> start_d,
-                   vector<double> target_vehicle,
+                   Vehicle target_vehicle,
                    vector<double> delta,
-                   vector<double> T,
-                   vector<double> predictions)
+                   double T)
 {
 
-// target = predictions[target_vehicle]
-//     # generate alternative goals
-//     all_goals = []
-//     timestep = 0.5
-//     t = T - 4 * timestep
-//     while t <= T + 4 * timestep:
-//         target_state = np.array(target.state_in(t)) + np.array(delta)
-//         goal_s = target_state[:3]
-//         goal_d = target_state[3:]
-//         goals = [(goal_s, goal_d, t)]
-//         for _ in range(N_SAMPLES):
-//             perturbed = perturb_goal(goal_s, goal_d)
-//             goals.append((perturbed[0], perturbed[1], t))
-//         all_goals += goals
-//         t += timestep
-    
-//     # find best trajectory
-//     trajectories = []
-//     for goal in all_goals:
-//         s_goal, d_goal, t = goal
-//         s_coefficients = JMT(start_s, s_goal, t)
-//         d_coefficients = JMT(start_d, d_goal, t)
-//         trajectories.append(tuple([s_coefficients, d_coefficients, t]))
-    
-//     best = min(trajectories, key=lambda tr: calculate_cost(tr, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS))
-//     calculate_cost(best, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS, verbose=True)
-//     return best
+    double timestep = 0.2;
+    double t;
+    vector<double> goal_s(3);
+    vector<double> goal_d(3);
+    vector<double> target_state;
+    vector<double> s_coefficients(3);
+    vector<double> d_coefficients(3);
+    vector<double> ptg_coefficients(6);
+    t = T - 4 * timestep;
+    while (t <= T + 4 * timestep)
+    {
+        target_state = target_vehicle.state_in(t);
+        goal_s[0] = target_state[0];
+        goal_s[1] = target_state[1];
+        goal_s[2] = target_state[2];
+        goal_d[0] = target_state[3];
+        goal_d[1] = target_state[4];
+        goal_d[2] = target_state[5];
+    }
 
+    s_coefficients = JMT(start_s,goal_s,T+4*timestep);
+    d_coefficients = JMT(start_d,goal_d,T+4*timestep);
+    ptg_coefficients[0] = s_coefficients[0];
+    ptg_coefficients[1] = s_coefficients[1];
+    ptg_coefficients[2] = s_coefficients[2];
+    ptg_coefficients[3] = d_coefficients[0];
+    ptg_coefficients[4] = d_coefficients[1];
+    ptg_coefficients[5] = d_coefficients[2];
+    return ptg_coefficients;
+
+    // target = predictions[target_vehicle]
+    //     # generate alternative goals
+    //     all_goals = []
+    //     timestep = 0.5
+    //     t = T - 4 * timestep
+    //     while t <= T + 4 * timestep:
+    //         target_state = np.array(target.state_in(t)) + np.array(delta)
+    //         goal_s = target_state[:3]
+    //         goal_d = target_state[3:]
+    //         goals = [(goal_s, goal_d, t)]
+    //         for _ in range(N_SAMPLES):
+    //             perturbed = perturb_goal(goal_s, goal_d)
+    //             goals.append((perturbed[0], perturbed[1], t))
+    //         all_goals += goals
+    //         t += timestep
+
+    //     # find best trajectory
+    //     trajectories = []
+    //     for goal in all_goals:
+    //         s_goal, d_goal, t = goal
+    //         s_coefficients = JMT(start_s, s_goal, t)
+    //         d_coefficients = JMT(start_d, d_goal, t)
+    //         trajectories.append(tuple([s_coefficients, d_coefficients, t]))
+
+    //     best = min(trajectories, key=lambda tr: calculate_cost(tr, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS))
+    //     calculate_cost(best, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS, verbose=True)
+    //     return best
 }

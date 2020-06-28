@@ -7,23 +7,24 @@
 #include <vector>
 
 using std::vector;
-vector<double> JMT(vector<double> &start, vector<double> &end, double T);
-vector<double> PTG(vector<double> start_s,
-                   vector<double> start_d,
-                   vector<double> target_vehicle,
-                   vector<double> delta,
-                   vector<double> T,
-                   vector<double> predictions);
-
 class Vehicle
 {
     // constant acceleration vehicle
 public:
     Vehicle(vector<double> start)  {start_state = start;};
-
+    vector<double> state_in(double t);
 private:
     vector<double> start_state;
-    vector<double> state_in(double t);
+    
 };
+
+vector<double> JMT(vector<double> &start, vector<double> &end, double T);
+vector<double> PTG(vector<double> start_s,
+                   vector<double> start_d,
+                   Vehicle target_vehicle,
+                   vector<double> delta,
+                   double T
+                   );
+
 
 #endif // LPP_H
