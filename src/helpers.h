@@ -97,7 +97,7 @@ vector<double> getFrenet(double x, double y, double theta,
   double n_y = maps_y[next_wp]-maps_y[prev_wp];
   double x_x = x - maps_x[prev_wp];
   double x_y = y - maps_y[prev_wp];
-
+  printf("getFrenet--->x: %lf, y: %lf, prev_wp: %d, next_wp,: %d, n_x: %lf, n_y: %lf, x_x: %lf, x_y: %lf \n\n", x,y,prev_wp,next_wp,n_x,n_y,x_x,x_y);
   // find the projection of x onto n
   double proj_norm = (x_x*n_x+x_y*n_y)/(n_x*n_x+n_y*n_y);
   double proj_x = proj_norm*n_x;
