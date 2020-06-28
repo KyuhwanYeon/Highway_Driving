@@ -97,19 +97,25 @@ int main()
           json msgJson;
 
           /**
-           * TODO: Spline path planning generation 
+           * TODO: 
+           * 1. Spline path planning generation
+           * 2. polynomial path generation 
            */
+          // ptsx, ptsy are for spline path
+          // ptpx, ptpy are for polynomial path
           int lane = 1;
           int next_wp = -1;
+          int time_to_goal = 1;
           double ref_vel = 49.5; //mph
           int prev_size = previous_path_x.size();
           vector<double> ptsx;
           vector<double> ptsy;
+          vector<double> ptpx;
+          vector<double> ptpy;
           double ref_x = car_x;
           double ref_y = car_y;
           double ref_yaw = deg2rad(car_yaw);
 
-          // ptsx, ptsy are for spline
           // ptsx[0],ptsx[1] are for tangent of previous path
           if (prev_size < 2)
           {
@@ -149,42 +155,38 @@ int main()
           ptsy.push_back(next_wp1[1]);
           ptsy.push_back(next_wp2[1]);
 
-          // local coorinate, after shift, ref_x and ref_y is coordinate (0, 0)
-          for (int i = 0; i < ptsx.size(); i++)
-          {
-            printf("previous ptsx[i], ptsy[i]: %lf, %lf \n", ptsx[i], ptsy[i]);
-            printf("ref_x, ref_y : %lf, %lf \n", ref_x,ref_y);
+          // Add polynomial start point and goal point
 
-            //shift car reference angle to 0 degrees
-            double shift_x = ptsx[i] - ref_x;
-            double shift_y = ptsy[i] - ref_y;
-            printf("shift_x, shift_y : %lf, %lf \n", shift_x,shift_y);
-
-
-            ptsx[i] = (shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw));
-            ptsy[i] = (shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw));
-            printf("after ptsx[i], ptsy[i]: %lf, %lf \n\n", ptsx[i], ptsy[i]);
-          }
-          printf("---------------------------------\n");
+          vector<double> next_wp_polynomial0 = getXY(car_s, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+          vector<double> next_wp_polynomial1 = getXY(car_s + time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+          vector<double> next_wp_polynomial2 = getXY(car_s + 2 * time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+          ptpx.push_back(next_wp_polynomial0[0]);
+          ptpy.push_back(next_wp_polynomial0[1]);
+          ptpx.push_back(ref_x);
+          ptpy.push_back(ref_y);
+          ptpx.push_back(next_wp_polynomial1[0]);
+          ptpy.push_back(next_wp_polynomial1[1]);          
+          ptpx.push_back(next_wp_polynomial2[0]);
+          ptpy.push_back(next_wp_polynomial2[1]);              
           
+
+          // call by reference, global 2 local coordinate conversion
+          global2local_coord_conversion(ptsx, ptsy, ref_x, ref_y, ref_yaw);
+          global2local_coord_conversion(ptpx, ptpy, ref_x, ref_y, ref_yaw);
+
           // spline fitting
           tk::spline s;
-
           s.set_points(ptsx, ptsy);
-
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
-
+          vector<double> next_x_vals_spline;
+          vector<double> next_y_vals_spline;
           for (int i = 0; i < previous_path_x.size(); i++)
           {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
+            next_x_vals_spline.push_back(previous_path_x[i]);
+            next_y_vals_spline.push_back(previous_path_y[i]);
           }
-
           double target_x = 30.0;
           double target_y = s(target_x);
           double target_dist = sqrt((target_x) * (target_x) + (target_y) * (target_y));
-
           double x_add_on = 0;
 
           for (int i = 1; i <= 50 - previous_path_x.size(); i++)
@@ -214,12 +216,49 @@ int main()
             x_point += ref_x;
             y_point += ref_y;
 
-            next_x_vals.push_back(x_point);
-            next_y_vals.push_back(y_point);
+            next_x_vals_spline.push_back(x_point);
+            next_y_vals_spline.push_back(y_point);
+          }
+          // polynomial generation
+          vector<double> next_x_vals_poly;
+          vector<double> next_y_vals_poly;
+          double start_x = ptpx[1];
+          double start_y = ptpy[1];
+          double goal_x = ptpx[2];
+          double goal_y = ptpy[2];
+          printf(" ptpx0: %lf, ptpy0: %lf\n", ptpx[0], ptpy[0]);
+          printf(" ptpx1: %lf, ptpy1: %lf\n", ptpx[1], ptpy[1]);
+          printf(" ptpx2: %lf, ptpy2: %lf\n", ptpx[2], ptpy[2]);
+
+          double start_yaw = atan2(ptpy[2] - ptpy[1], ptpx[2] - ptpx[1]);
+          double goal_yaw = atan2(ptpy[3] - ptpy[2], ptpx[3] - ptpx[2]);
+          printf("start yaw: %lf\n", start_yaw);
+          printf("goal_yaw: %lf\n", goal_yaw);
+          vector<double> start_frenet = getFrenet(start_x, start_y,start_yaw,ptpx,ptpy );
+          vector<double> goal_frenet = getFrenet(goal_x, goal_y,goal_yaw,ptpx,ptpy );
+
+
+          //coordinate move: start s -> 0, d->0
+          start_frenet[0] = start_frenet[0]-start_frenet[0];
+          start_frenet[1] = start_frenet[1]-start_frenet[1];
+          goal_frenet[0] = goal_frenet[0]-start_frenet[0];
+          goal_frenet[1] = goal_frenet[1]-start_frenet[1];
+          printf("start s: %lf, d: %lf\n", start_frenet[0], start_frenet[1]);
+          printf("goal s: %lf, d: %lf\n", goal_frenet[0], goal_frenet[1]);
+
+          for (int i = 0; i < previous_path_x.size(); i++)
+          {
+            next_x_vals_poly.push_back(previous_path_x[i]);
+            next_y_vals_poly.push_back(previous_path_y[i]);
+          }
+          for (int i = 1; i <= 50 - previous_path_x.size(); i++)
+          {
+            double N = 50 - previous_path_x.size();
+            double t_inc ;
           }
 
-          msgJson["next_x"] = next_x_vals;
-          msgJson["next_y"] = next_y_vals;
+          msgJson["next_x"] = next_x_vals_spline;
+          msgJson["next_y"] = next_y_vals_spline;
 
           auto msg = "42[\"control\"," + msgJson.dump() + "]";
 
