@@ -80,6 +80,7 @@ int main()
           double car_d = j[1]["d"];
           double car_yaw = j[1]["yaw"];
           double car_speed = j[1]["speed"];
+          //printf("car_s: %lf" , car_s);
 
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
@@ -97,48 +98,57 @@ int main()
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
-          double pos_x;
-          double pos_y;
-          double angle;
-          int path_size = previous_path_x.size();
-          for (int i = 0; i < path_size; ++i)
-          {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
-          }
+          // double pos_x;
+          // double pos_y;
+          // double angle;
+          // int path_size = previous_path_x.size();
+          // for (int i = 0; i < path_size; ++i)
+          // {
+          //   next_x_vals.push_back(previous_path_x[i]);
+          //   next_y_vals.push_back(previous_path_y[i]);
+          // }
 
-          if (path_size == 0)
-          {
-            pos_x = car_x;
-            pos_y = car_y;
-            angle = deg2rad(car_yaw);
-          }
-          else
-          {
-            pos_x = previous_path_x[path_size - 1];
-            pos_y = previous_path_y[path_size - 1];
+          // if (path_size == 0)
+          // {
+          //   pos_x = car_x;
+          //   pos_y = car_y;
+          //   angle = deg2rad(car_yaw);
+          // }
+          // else
+          // {
+          //   pos_x = previous_path_x[path_size - 1];
+          //   pos_y = previous_path_y[path_size - 1];
 
-            double pos_x2 = previous_path_x[path_size - 2];
-            double pos_y2 = previous_path_y[path_size - 2];
-            angle = atan2(pos_y - pos_y2, pos_x - pos_x2);
-          }
+          //   double pos_x2 = previous_path_x[path_size - 2];
+          //   double pos_y2 = previous_path_y[path_size - 2];
+          //   angle = atan2(pos_y - pos_y2, pos_x - pos_x2);
+          // }
 
           /**
            * TODO: define a path made up of (x,y) points that the car will visit
            *   sequentially every .02 seconds
            */
-          double dist_inc = 0.5;
+
+          
+          double dist_inc = 0.1;
           vector<double> start = {1,2,3};
           vector<double> end = {2,3,4};
           double Time = 3;
           vector<double> coeff = JMT(start, end, Time);
-          for (int i = 0; i < 50 - path_size; ++i)
+          for (int i = 0; i < 50; ++i)
           {
-            next_x_vals.push_back(pos_x + (dist_inc)*cos(angle + (i + 1) * (pi() / 100)));
-            next_y_vals.push_back(pos_y + (dist_inc)*sin(angle + (i + 1) * (pi() / 100)));
-            pos_x += (dist_inc)*cos(angle + (i + 1) * (pi() / 100));
-            pos_y += (dist_inc)*sin(angle + (i + 1) * (pi() / 100));
+            double next_s = car_s + (i+1)*dist_inc;
+            double next_d = 6;
+             
+            vector<double> xy = getXY(next_s, next_d, map_waypoints_s,map_waypoints_x,map_waypoints_y);
+            //printf("car_x: %lf, car_y: %lf, car_s: %lf, next s: %lf, next_x: %lf, next_y: %lf \n", car_x, car_y, car_s, next_s,xy[0],xy[1]);
+            next_x_vals.push_back(xy[0]);
+            next_y_vals.push_back(xy[1]);
+            
           }
+          int path_size = previous_path_x.size();
+          
+          printf("previous_pathsize: %d, next x: %lf, next_y: %lf \n\n", path_size, next_x_vals[0], next_y_vals[0]);
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
