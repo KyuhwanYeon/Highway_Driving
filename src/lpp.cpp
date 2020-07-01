@@ -1,7 +1,13 @@
 #include "lpp.h"
+#include "spline.h"
+
+
+
+#define SAMPLING_T 0.2
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+
 vector<double> Vehicle::state_in(double t)
 {
     vector<double> s(3);
@@ -42,10 +48,6 @@ vector<double> JMT(vector<double> &start, vector<double> &end, double T)
    * @output an array of length 6, each value corresponding to a coefficent in 
    *   the polynomial:
    *   s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
-   *
-   * EXAMPLE
-   *   > JMT([0, 10, 0], [10, 10, 0], 1)
-   *     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
    */
     MatrixXd A(3, 3);
     A << T * T * T, T * T * T * T, T * T * T * T * T,
@@ -65,6 +67,11 @@ vector<double> JMT(vector<double> &start, vector<double> &end, double T)
     vector<double> result = {start[0], start[1], start[2] / 2, Coeff.coeff(0, 0), Coeff.coeff(1, 0), Coeff.coeff(2, 0)};
     return result;
 }
+double CalPoly(vector<double> coeff, double T)
+{
+    double result = coeff[0] + coeff[1] * T + coeff[2] * T * T + coeff[3] * T * T * T + coeff[4] * T * T * T * T + coeff[5] * T * T * T * T * T;
+    return result;
+}
 vector<double> PTG(vector<double> start_s,
                    vector<double> start_d,
                    Vehicle target_vehicle,
@@ -72,7 +79,7 @@ vector<double> PTG(vector<double> start_s,
                    double T)
 {
 
-    double timestep = 0.2;
+    double timestep = SAMPLING_T;
     double t;
     vector<double> goal_s(3);
     vector<double> goal_d(3);
@@ -131,22 +138,130 @@ vector<double> PTG(vector<double> start_s,
     //     return best
 }
 
-void global2local_coord_conversion (vector<double> &ptx, vector<double> &pty, double ref_x, double ref_y, double ref_yaw)
+void global2local_coord_conversion(vector<double> &ptx, vector<double> &pty, double ref_x, double ref_y, double ref_yaw)
 {
     // local coorinate conversion, after shift, ref_x and ref_y is coordinate (0, 0)
     for (int i = 0; i < ptx.size(); i++)
     {
-        printf("previous ptx[i], pty[i]: %lf, %lf \n", ptx[i], pty[i]);
-        printf("ref_x, ref_y : %lf, %lf \n", ref_x, ref_y);
-
         //shift car reference angle to 0 degrees
         double shift_x = ptx[i] - ref_x;
         double shift_y = pty[i] - ref_y;
-        printf("shift_x, shift_y : %lf, %lf \n", shift_x, shift_y);
-
         ptx[i] = (shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw));
         pty[i] = (shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw));
-        printf("after ptx[i], pty[i]: %lf, %lf \n\n", ptx[i], pty[i]);
     }
-    printf("---------------------------------\n");
 }
+
+void quintic_polynomial_trajectory_generation()
+{
+}
+vector<vector<double>> spline_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double ref_vel, int lane,
+                                                    nlohmann::json previous_path_x, nlohmann::json previous_path_y,
+                                                     vector<double> map_waypoints_s,vector<double> map_waypoints_x, vector<double> map_waypoints_y)
+{
+    vector<double> ptsx;
+    vector<double> ptsy;
+    double car_speed;
+    int prev_size = previous_path_x.size();
+
+    double ref_x = car_x;
+    double ref_y = car_y;
+    double ref_yaw = deg2rad(car_yaw);
+
+    // ptsx[0],ptsx[1] are for tangent of previous path
+    if (prev_size < 2)
+    {
+        double prev_car_x = car_x - cos(car_yaw);
+        double prev_car_y = car_y - sin(car_yaw);
+
+        ptsx.push_back(prev_car_x);
+        ptsx.push_back(car_x);
+
+        ptsy.push_back(prev_car_y);
+        ptsy.push_back(car_y);
+    }
+    else
+    {
+        ref_x = previous_path_x[prev_size - 1];
+        ref_y = previous_path_y[prev_size - 1];
+        double ref_x_prev = previous_path_x[prev_size - 2];
+        double ref_y_prev = previous_path_y[prev_size - 2];
+        ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
+
+        ptsx.push_back(previous_path_x[prev_size - 2]);
+        ptsx.push_back(previous_path_x[prev_size - 1]);
+        ptsy.push_back(previous_path_y[prev_size - 2]);
+        ptsy.push_back(previous_path_y[prev_size - 1]);
+        car_speed = (sqrt((ref_x - ref_x_prev) * (ref_x - ref_x_prev) + (ref_y - ref_y_prev) * (ref_y - ref_y_prev)) / .02) * 2.237;
+    }
+    // ptsx[2],[3],[4] are netx wp goal
+    vector<double> next_wp0 = getXY(car_s + 30, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    vector<double> next_wp1 = getXY(car_s + 60, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    vector<double> next_wp2 = getXY(car_s + 90, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
+    ptsx.push_back(next_wp0[0]);
+    ptsx.push_back(next_wp1[0]);
+    ptsx.push_back(next_wp2[0]);
+
+    ptsy.push_back(next_wp0[1]);
+    ptsy.push_back(next_wp1[1]);
+    ptsy.push_back(next_wp2[1]);
+
+    // call by reference, global 2 local coordinate conversion
+    global2local_coord_conversion(ptsx, ptsy, ref_x, ref_y, ref_yaw);
+
+    // spline fitting
+    tk::spline s;
+    s.set_points(ptsx, ptsy);
+    vector<double> next_x_vals;
+    vector<double> next_y_vals;
+    for (int i = 0; i < previous_path_x.size(); i++)
+    {
+        next_x_vals.push_back(previous_path_x[i]);
+        next_y_vals.push_back(previous_path_y[i]);
+    }
+    double target_x = 30.0;
+    double target_y = s(target_x);
+    double target_dist = sqrt((target_x) * (target_x) + (target_y) * (target_y));
+    double x_add_on = 0;
+
+    for (int i = 1; i <= 50 - previous_path_x.size(); i++)
+    {
+
+        if (ref_vel > car_speed)
+        {
+            car_speed += .224;
+        }
+        else if (ref_vel < car_speed)
+        {
+            car_speed -= .224;
+        }
+
+        double N = (target_dist / (.02 * car_speed / 2.24));
+        double x_point = x_add_on + (target_x) / N;
+        double y_point = s(x_point);
+
+        x_add_on = x_point;
+
+        double x_ref = x_point;
+        double y_ref = y_point;
+
+        x_point = (x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw));
+        y_point = (x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw));
+
+        x_point += ref_x;
+        y_point += ref_y;
+
+        next_x_vals.push_back(x_point);
+        next_y_vals.push_back(y_point);
+    }
+    return {next_x_vals, next_y_vals};
+}
+
+// void local2global_coord_conversion()
+// {
+//                 x_point = (x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw));
+//             y_point = (x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw));
+
+//             x_point += ref_x;
+//             y_point += ref_y;
+// }
