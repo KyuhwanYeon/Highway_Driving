@@ -7,12 +7,14 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
 #include "lpp.h"
+#include "bp.h"
 #include "spline.h"
 // for convenience
 using nlohmann::json;
 using std::string;
 using std::vector;
 
+int lane = 0; // start lane
 int main()
 {
   uWS::Hub h;
@@ -81,7 +83,6 @@ int main()
           double car_yaw = j[1]["yaw"];
           double car_speed = j[1]["speed"];
 
-
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
           auto previous_path_y = j[1]["previous_path_y"];
@@ -95,17 +96,13 @@ int main()
 
           json msgJson;
 
-          /**
-           * TODO: 
-           * 1. Spline path planning generation
-           * 2. polynomial path generation 
-           */
-          // ptsx, ptsy are for spline path
-          // ptpx, ptpy are for polynomial path
-          int lane = 1;
           double ref_vel = 49.5; //mph
           int next_wp = -1;
-          
+          int close_obs = check_close_obstacle(sensor_fusion, car_s, car_d);
+          if (close_obs == 1)
+          {
+            printf("Too close!!!!!!!!!!\n");
+          }
           // trajectory planning
           vector<vector<double>> spline_trajectory = spline_trajectory_generation(
               car_x, car_y, car_yaw, car_s, ref_vel, lane,
