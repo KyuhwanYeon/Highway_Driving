@@ -2,6 +2,14 @@
     "files.associations": {
         "functional": "cpp",
         "vector": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "array": "cpp",
+        "hash_map": "cpp",
+        "bitset": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "valarray": "cpp",
+        "deque": "cpp",
+        "string": "cpp"
     }
 }
