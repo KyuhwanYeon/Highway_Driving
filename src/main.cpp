@@ -99,15 +99,17 @@ int main()
 
           json msgJson;
 
-          double ref_vel = 49.5; //mph
-          int next_wp = -1;
           
+          int next_wp = -1;
+
           cur_lane = get_lane(car_d);
-          next_lane = get_next_lane(sensor_fusion, car_s, car_d, cur_lane);
+          vector<double> next_status = next_ego_vehicle_status(sensor_fusion, car_s, car_d, cur_lane);
+          int next_lane = (int)next_status[0];
+          double next_vel = next_status[1];
 
           // trajectory planning
           vector<vector<double>> spline_trajectory = spline_trajectory_generation(
-              car_x, car_y, car_yaw, car_s, ref_vel, next_lane,
+              car_x, car_y, car_yaw, car_s, next_vel, next_lane,
               previous_path_x, previous_path_y,
               map_waypoints_s, map_waypoints_x, map_waypoints_y);
 

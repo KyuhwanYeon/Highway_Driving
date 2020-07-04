@@ -6,6 +6,8 @@
 #include "json.hpp"
 #define LANE_WIDTH 4
 using nlohmann::json;
+using std::string;
+using std::vector;
 enum BehaviorSyntax
 {
     kStraight = 0,
@@ -25,8 +27,11 @@ enum CloseVehicleSyntax
     kFar = 0,
     kClose = 1,
 };
+
 int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_d);
 int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);
-int get_next_lane(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);
+vector<double> next_ego_vehicle_status(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);
 int get_lane(double d);
+
+double get_ref_vel(void);
 #endif // BP_H

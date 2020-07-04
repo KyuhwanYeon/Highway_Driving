@@ -439,3 +439,8 @@ vector<vector<double>> spline_trajectory_generation(double car_x, double car_y, 
 //             x_point += ref_x;
 //             y_point += ref_y;
 // }
+
+double speed_planning()
+{
+    
+}
