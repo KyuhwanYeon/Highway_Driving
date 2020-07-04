@@ -14,7 +14,10 @@ using nlohmann::json;
 using std::string;
 using std::vector;
 
-int lane = 0; // start lane
+
+
+int next_lane = 1; 
+int cur_lane;
 int main()
 {
   uWS::Hub h;
@@ -98,14 +101,13 @@ int main()
 
           double ref_vel = 49.5; //mph
           int next_wp = -1;
-          int close_obs = check_close_obstacle(sensor_fusion, car_s, car_d);
-          if (close_obs == 1)
-          {
-            printf("Too close!!!!!!!!!!\n");
-          }
+          
+          cur_lane = get_lane(car_d);
+          next_lane = get_next_lane(sensor_fusion, car_s, car_d, cur_lane);
+
           // trajectory planning
           vector<vector<double>> spline_trajectory = spline_trajectory_generation(
-              car_x, car_y, car_yaw, car_s, ref_vel, lane,
+              car_x, car_y, car_yaw, car_s, ref_vel, next_lane,
               previous_path_x, previous_path_y,
               map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
