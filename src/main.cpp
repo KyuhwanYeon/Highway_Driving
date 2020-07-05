@@ -74,46 +74,38 @@ int main()
 
         if (event == "telemetry")
         {
-          // j[1] is the data JSON object
-
-          // Main car's localization Data
+          // 1. Load data from the environment
+          // Main car's localization Data , j[1] is the data JSON object
           double car_x = j[1]["x"];
           double car_y = j[1]["y"];
           double car_s = j[1]["s"];
           double car_d = j[1]["d"];
           double car_yaw = j[1]["yaw"];
           double car_speed = j[1]["speed"];
-
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
           auto previous_path_y = j[1]["previous_path_y"];
           // Previous path's end s and d values
           double end_path_s = j[1]["end_path_s"];
           double end_path_d = j[1]["end_path_d"];
-
           // Sensor Fusion Data, a list of all other cars on the same side
           //   of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
 
           json msgJson;
 
-          int next_wp = -1;
-
+          // 2. behavior planning: set next lane, next velocity for the ego-vehicle
           cur_lane = get_lane(car_d);
           vector<double> next_status = next_ego_vehicle_status(sensor_fusion, car_s, car_d, cur_lane);
           int next_lane = (int)next_status[0];
           double next_vel = next_status[1];
 
-          // trajectory planning
-          
+          // 3. trajectory planning: generate trajectory
           TrajectoryPlanning tp = TrajectoryPlanning(car_x, car_y, car_yaw, car_s, next_vel, next_lane,
                              previous_path_x, previous_path_y,
                              map_waypoints_s, map_waypoints_x, map_waypoints_y) ;
           vector<vector<double>> spline_trajectory = tp.spline_trajectory_generation();
-          // vector<vector<double>> spline_trajectory = spline_trajectory_generation(
-          //     car_x, car_y, car_yaw, car_s, next_vel, next_lane,
-          //     previous_path_x, previous_path_y,
-          //     map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
 
           msgJson["next_x"] = spline_trajectory[0];
           msgJson["next_y"] = spline_trajectory[1];
