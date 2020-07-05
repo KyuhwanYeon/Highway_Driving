@@ -14,9 +14,7 @@ using nlohmann::json;
 using std::string;
 using std::vector;
 
-
-
-int next_lane = 1; 
+int next_lane = 1;
 int cur_lane;
 int main()
 {
@@ -99,7 +97,6 @@ int main()
 
           json msgJson;
 
-          
           int next_wp = -1;
 
           cur_lane = get_lane(car_d);
@@ -108,10 +105,15 @@ int main()
           double next_vel = next_status[1];
 
           // trajectory planning
-          vector<vector<double>> spline_trajectory = spline_trajectory_generation(
-              car_x, car_y, car_yaw, car_s, next_vel, next_lane,
-              previous_path_x, previous_path_y,
-              map_waypoints_s, map_waypoints_x, map_waypoints_y);
+          
+          TrajectoryPlanning tp = TrajectoryPlanning(car_x, car_y, car_yaw, car_s, next_vel, next_lane,
+                             previous_path_x, previous_path_y,
+                             map_waypoints_s, map_waypoints_x, map_waypoints_y) ;
+          vector<vector<double>> spline_trajectory = tp.spline_trajectory_generation();
+          // vector<vector<double>> spline_trajectory = spline_trajectory_generation(
+          //     car_x, car_y, car_yaw, car_s, next_vel, next_lane,
+          //     previous_path_x, previous_path_y,
+          //     map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
           msgJson["next_x"] = spline_trajectory[0];
           msgJson["next_y"] = spline_trajectory[1];
