@@ -98,7 +98,7 @@ vector<vector<double>> TrajectoryPlanning::spline_trajectory_generation(void)
         next_x_vals.push_back(previous_path_x[i]);
         next_y_vals.push_back(previous_path_y[i]);
     }
-    double target_x = offset_s + car_sdot*lane_change_duration; //offset_s+car_speed*lane_change_duration;
+    double target_x = 2*offset_s + car_sdot*lane_change_duration; //offset_s+car_speed*lane_change_duration;
     double target_y = s(target_x);
     double target_dist = sqrt((target_x) * (target_x) + (target_y) * (target_y));
     double x_add_on = 0;

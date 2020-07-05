@@ -21,7 +21,7 @@ int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_
             {
                 close_obs_v = obs_v* 2.237;
                 close_status = kClose;
-                printf("------------Lane change------------\n");
+                printf("- Lane change\n");
                 break;
             }
         }
