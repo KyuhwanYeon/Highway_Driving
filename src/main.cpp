@@ -6,7 +6,7 @@
 #include "util/Eigen-3.3/Eigen/Core"
 #include "util/Eigen-3.3/Eigen/QR"
 #include "util/json.hpp"
-#include "trajectory_planning/lpp.h"
+#include "trajectory_planning/tp.h"
 #include "behavior_planning/bp.h"
 #include "util/spline.h"
 // for convenience
