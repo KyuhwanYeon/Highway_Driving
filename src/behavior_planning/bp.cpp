@@ -1,13 +1,10 @@
 #include "bp.h"
 
-#define MINIMUM_DIST 30 // Lane change will be start at minimum distance
-// Check close obstacle on the ego lane
+#define MINIMUM_DIST 30 // Lane change will be start at minimum distance \
+                        // Check close obstacle on the ego lane
 
-double close_obs_v;
-double ref_vel; //mph
-int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_d)
+void BehaviorPlanning::cal_close_obs_status(void)
 {
-    int close_status;
     for (int i = 0; i < sensor_fusion.size(); i++)
     {
         float obs_s = sensor_fusion[i][5];
@@ -19,19 +16,21 @@ int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_
         {
             if (obs_s - car_s < MINIMUM_DIST && obs_s - car_s > 0)
             {
-                close_obs_v = obs_v* 2.237;
+                close_obs_v = obs_v * 2.237;
                 close_status = kClose;
                 printf("- Lane change\n");
                 break;
             }
         }
+        else
+        {
+            close_status = kFar;
+        }
     }
-    return close_status;
 }
-int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane)
+void BehaviorPlanning::cal_safe_lane(void)
 {
     vector<int> unsafe_lane_list;
-    int safe_lane;
     int right_lane = cur_lane + 1;
     int left_lane = cur_lane - 1;
 
@@ -42,14 +41,14 @@ int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, 
         float obs_s = sensor_fusion[i][5];
         float obs_d = sensor_fusion[i][6];
 
-        if (obs_s - car_s < MINIMUM_DIST + 5 && car_s - obs_s < MINIMUM_DIST-25)
+        if (obs_s - car_s < MINIMUM_DIST + 5 && car_s - obs_s < MINIMUM_DIST - 25)
         {
-            unsafe_lane_list.push_back(get_lane(obs_d));
+            unsafe_lane_list.push_back(cal_lane(obs_d));
         }
-    }    
+    }
     for (int unsafe_lane : unsafe_lane_list)
     {
-        
+
         if (unsafe_lane == right_lane)
         {
             cnt_unsafe_right_lane++;
@@ -59,101 +58,87 @@ int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, 
             cnt_unsafe_left_lane++;
         }
     }
-    if (cnt_unsafe_left_lane>0)
+    if (cnt_unsafe_left_lane > 0)
     {
         printf("- Left lane is unsafe\n");
     }
-    if (cnt_unsafe_right_lane>0)
+    if (cnt_unsafe_right_lane > 0)
     {
         printf("- Right lane is unsafe\n");
     }
-    
-    // if current lane is lane 1, it only can move to right
-    if (cur_lane == kLane1)
-    {
-        if (cnt_unsafe_right_lane == 0)
-        {
-            safe_lane = right_lane;
-        }
-        else
-        {
-            safe_lane = cur_lane;
-        }
-    }
-    // if current lane is lane 3, it only can move to left
-    else if (cur_lane == kLane3)
-    {
-        if (cnt_unsafe_left_lane == 0)
-        {
-            safe_lane = left_lane;
-        }
-        else
-        {
-            safe_lane = cur_lane;
-        }
-    }
-    // else, vehicle can move right or left. but left has priority
-    else
-    {
 
-        if (cnt_unsafe_left_lane == 0)
+    if (close_status == kClose)
+    {
+        // if current lane is lane 1, it only can move to right
+        if (cur_lane == kLane1)
         {
-            safe_lane = left_lane;
+            if (cnt_unsafe_right_lane == 0)
+            {
+                safe_lane = right_lane;
+            }
+            else
+            {
+                safe_lane = cur_lane;
+            }
         }
-        else if (cnt_unsafe_right_lane == 0)
+        // if current lane is lane 3, it only can move to left
+        else if (cur_lane == kLane3)
         {
-            safe_lane = right_lane;
+            if (cnt_unsafe_left_lane == 0)
+            {
+                safe_lane = left_lane;
+            }
+            else
+            {
+                safe_lane = cur_lane;
+            }
         }
+        // else, vehicle can move right or left. but left has priority
         else
         {
-            safe_lane = cur_lane;
-        }
-    }
-    printf("- safe_lane: %d \n\n", safe_lane+1);
 
-    return safe_lane;
-}
-vector<double> next_ego_vehicle_status(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane)
-{
-    double next_vel;
-    int next_lane;
-    vector<double> next_status;
-    if (check_close_obstacle(sensor_fusion, car_s, car_d) == kClose)
-    {
-        next_lane = check_safety_lane(sensor_fusion, car_s, car_d, cur_lane);
-        next_vel = close_obs_v;
+            if (cnt_unsafe_left_lane == 0)
+            {
+                safe_lane = left_lane;
+            }
+            else if (cnt_unsafe_right_lane == 0)
+            {
+                safe_lane = right_lane;
+            }
+            else
+            {
+                safe_lane = cur_lane;
+            }
+        }
     }
     else
     {
-        next_lane = cur_lane;
-        next_vel = 49.5 ;
+        safe_lane = cur_lane;
     }
-    return {(double)next_lane, next_vel};
+    printf("- safe_lane: %d \n\n", safe_lane + 1);
 }
-int get_lane(double d)
+void BehaviorPlanning::obtain_behavior(void)
 {
-    int lane;
-    if (d > 0 && d <= LANE_WIDTH)
+    cal_close_obs_status();
+    cal_safe_lane();
+
+    if (close_status == kClose)
     {
-        lane = kLane1;
-    }
-    else if (d > LANE_WIDTH && d <= 2 * LANE_WIDTH)
-    {
-        lane = kLane2;
-    }
-    else if (d > 2 * LANE_WIDTH && d <= 3 * LANE_WIDTH)
-    {
-        lane = kLane3;
+        target_lane = safe_lane;
+        target_vel = close_obs_v;
     }
     else
     {
-        lane = kLaneOut;
+        target_lane = cur_lane;
+        target_vel = 49.5;
     }
-    return lane;
 }
 
-double get_ref_vel (void)
+double BehaviorPlanning::get_target_vel(void)
 {
-   
-    return ref_vel;    
+    return target_vel;
+}
+int BehaviorPlanning::get_target_lane(void)
+{
+    return target_lane;
 }

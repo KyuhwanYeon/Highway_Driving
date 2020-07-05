@@ -93,15 +93,16 @@ int main()
           auto sensor_fusion = j[1]["sensor_fusion"];
 
           json msgJson;
-
+          cur_lane = cal_lane(car_d);
+          
           // 2. behavior planning: set next lane, next velocity for the ego-vehicle
-          cur_lane = get_lane(car_d);
-          vector<double> next_status = next_ego_vehicle_status(sensor_fusion, car_s, car_d, cur_lane);
-          int next_lane = (int)next_status[0];
-          double next_vel = next_status[1];
+          BehaviorPlanning bp = BehaviorPlanning(sensor_fusion, car_s, car_d, cur_lane);
+          bp.obtain_behavior();
+          int target_lane = bp.get_target_lane();
+          double target_vel = bp.get_target_vel();
 
           // 3. trajectory planning: generate trajectory
-          TrajectoryPlanning tp = TrajectoryPlanning(car_x, car_y, car_yaw, car_s, next_vel, next_lane,
+          TrajectoryPlanning tp = TrajectoryPlanning(car_x, car_y, car_yaw, car_s, target_vel, target_lane,
                              previous_path_x, previous_path_y,
                              map_waypoints_s, map_waypoints_x, map_waypoints_y) ;
           vector<vector<double>> spline_trajectory = tp.spline_trajectory_generation();

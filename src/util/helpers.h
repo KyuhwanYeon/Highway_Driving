@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#define LANE_WIDTH 4
+
 // for convenience
 using std::string;
 using std::vector;
@@ -45,5 +47,15 @@ vector<double> getFrenet(double x, double y, double theta,
 vector<double> getXY(double s, double d, const vector<double> &maps_s, 
                      const vector<double> &maps_x, 
                      const vector<double> &maps_y) ;
+int cal_lane(double d);
+
+enum LaneList
+{
+    kLane1 = 0,
+    kLane2 = 1,
+    kLane3 = 2,
+    kLaneOut = 3, // Lane out means that vehicle is out of lane 1, 2, 3. for example, it is in left of the center lane
+};
+
 
 #endif  // HELPERS_H

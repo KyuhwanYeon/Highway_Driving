@@ -4,23 +4,37 @@
 #include <cmath>
 #include <iostream>
 #include "../util/json.hpp"
-#define LANE_WIDTH 4
+#include "../util/helpers.h"
 using nlohmann::json;
 using std::string;
 using std::vector;
-enum BehaviorSyntax
+
+class BehaviorPlanning
 {
-    kStraight = 0,
-    kRightLaneChange = 1,
-    kLeftLaneChange = 2,
+
+public:
+    BehaviorPlanning(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane) : car_s(car_s), car_d(car_d), cur_lane(cur_lane), sensor_fusion(sensor_fusion), target_lane(cur_lane), target_vel(49.5), close_status(0), safe_lane(cur_lane){};
+    void cal_close_obs_status(void);
+    void cal_safe_lane(void);
+    double get_target_vel(void);
+    int get_target_lane(void);
+    void obtain_behavior(void);    
+
+private:
+
+    double car_s; // m
+    double car_d; // m
+    int cur_lane;
+    nlohmann::json sensor_fusion;
+    int target_lane;
+    double target_vel;
+
+    int close_status;
+    double close_obs_v;
+
+    int safe_lane;
 };
-enum LaneList
-{
-    kLane1 = 0,
-    kLane2 = 1,
-    kLane3 = 2,    
-    kLaneOut = 3,      // Lane out means that vehicle is out of lane 1, 2, 3. for example, it is in left of the center lane
-};
+
 
 enum CloseVehicleSyntax
 {
@@ -28,10 +42,9 @@ enum CloseVehicleSyntax
     kClose = 1,
 };
 
-int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_d);
-int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);
-vector<double> next_ego_vehicle_status(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);
-int get_lane(double d);
+// int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_d);
+// int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);
+// void next_ego_vehicle_status(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);
+// int get_lane(double d);
 
-double get_ref_vel(void);
 #endif // BP_H

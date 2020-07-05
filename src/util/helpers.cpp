@@ -161,3 +161,25 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 
   return {x, y};
 }
+
+int cal_lane(double d)
+{
+    int lane;
+    if (d > 0 && d <= LANE_WIDTH)
+    {
+        lane = kLane1;
+    }
+    else if (d > LANE_WIDTH && d <= 2 * LANE_WIDTH)
+    {
+        lane = kLane2;
+    }
+    else if (d > 2 * LANE_WIDTH && d <= 3 * LANE_WIDTH)
+    {
+        lane = kLane3;
+    }
+    else
+    {
+        lane = kLaneOut;
+    }
+    return lane;
+}
