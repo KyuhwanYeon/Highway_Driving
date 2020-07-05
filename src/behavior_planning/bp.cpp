@@ -21,8 +21,7 @@ int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_
             {
                 close_obs_v = obs_v* 2.237;
                 close_status = kClose;
-                printf("--------- Lane change status --------\n");
-                printf("close_obs_v: %lf \n", close_obs_v);
+                printf("------------Lane change------------\n");
                 break;
             }
         }
@@ -43,7 +42,7 @@ int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, 
         float obs_s = sensor_fusion[i][5];
         float obs_d = sensor_fusion[i][6];
 
-        if (obs_s - car_s < MINIMUM_DIST && car_s - obs_s < MINIMUM_DIST-25)
+        if (obs_s - car_s < MINIMUM_DIST + 20 && car_s - obs_s < MINIMUM_DIST-25)
         {
             unsafe_lane_list.push_back(get_lane(obs_d));
         }
@@ -60,9 +59,6 @@ int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, 
             cnt_unsafe_left_lane++;
         }
     }
-    
-    printf("cnt_unsafe_left_lane: %d\n", cnt_unsafe_left_lane);
-    printf("cnt_unsafe_right_lane: %d\n", cnt_unsafe_right_lane);
     printf("-----------------------------------\n");
     // if current lane is lane 1, it only can move to right
     if (cur_lane == kLane1)
