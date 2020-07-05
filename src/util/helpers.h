@@ -23,6 +23,8 @@ string hasData(string s);
 constexpr double pi();
 double deg2rad(double x);
 double rad2deg(double x) ;
+double mph2ms(double x);
+double ms2mph(double x);
 // Calculate distance between two points
 double distance(double x1, double y1, double x2, double y2);
 

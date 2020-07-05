@@ -33,11 +33,11 @@ public:
     vector<vector<double>> spline_trajectory_generation(void);
 
 private:
-    double car_x;
-    double car_y;
+    double car_x; // m
+    double car_y; // m 
     double car_yaw;
-    double car_s;
-    double ref_vel;
+    double car_s; // m
+    double ref_vel; // m/s
     int lane;
     nlohmann::json previous_path_x;
     nlohmann::json previous_path_y;
