@@ -3,12 +3,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "Eigen-3.3/Eigen/Core"
-#include "Eigen-3.3/Eigen/QR"
-#include "json.hpp"
-#include "lpp.h"
-#include "bp.h"
-#include "spline.h"
+#include "util/Eigen-3.3/Eigen/Core"
+#include "util/Eigen-3.3/Eigen/QR"
+#include "util/json.hpp"
+#include "trajectory_planning/lpp.h"
+#include "behavior_planning/bp.h"
+#include "util/spline.h"
 // for convenience
 using nlohmann::json;
 using std::string;

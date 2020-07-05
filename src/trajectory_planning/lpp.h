@@ -3,11 +3,11 @@
 
 #include <cmath>
 #include <iostream>
-#include "Eigen-3.3/Eigen/Dense"
+#include "../util/Eigen-3.3/Eigen/Dense"
 #include <vector>
-#include "helpers.h"
-
-#include "json.hpp"
+#include "../util/helpers.h"
+#include "../util/spline.h"
+#include "../util/json.hpp"
 using nlohmann::json;
 using std::vector;
 class Vehicle
