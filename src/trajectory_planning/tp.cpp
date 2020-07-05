@@ -27,7 +27,7 @@ vector<vector<double>> TrajectoryPlanning::spline_trajectory_generation(void)
 {
     vector<double> grid_x;
     vector<double> grid_y;
-    double lane_change_duration = 3;  // time take to lane change [s]
+    double lane_change_duration = 4;  // time take to lane change [s]
     double car_speed;  // [m/s]
     double offset_s = 10;
     double static pre_car_s;
@@ -67,6 +67,10 @@ vector<vector<double>> TrajectoryPlanning::spline_trajectory_generation(void)
 
     double passing_idx = 50 - previous_path_x.size();
     double car_sdot = (car_s - pre_car_s) / (SAMPLING_T * passing_idx);
+    if (car_sdot <5)
+    {
+        car_sdot = 5; // threshold
+    }
     pre_car_s = car_s;
 
     vector<double> next_wp0 = getXY(car_s + offset_s + car_sdot*lane_change_duration, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);

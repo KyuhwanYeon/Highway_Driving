@@ -42,14 +42,14 @@ int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, 
         float obs_s = sensor_fusion[i][5];
         float obs_d = sensor_fusion[i][6];
 
-        if (obs_s - car_s < MINIMUM_DIST + 20 && car_s - obs_s < MINIMUM_DIST-25)
+        if (obs_s - car_s < MINIMUM_DIST + 5 && car_s - obs_s < MINIMUM_DIST-25)
         {
             unsafe_lane_list.push_back(get_lane(obs_d));
         }
     }    
     for (int unsafe_lane : unsafe_lane_list)
     {
-        printf("unsafe_lane: %d, cur_lane: %d \n", unsafe_lane, cur_lane);
+        
         if (unsafe_lane == right_lane)
         {
             cnt_unsafe_right_lane++;
@@ -59,7 +59,15 @@ int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, 
             cnt_unsafe_left_lane++;
         }
     }
-    printf("-----------------------------------\n");
+    if (cnt_unsafe_left_lane>0)
+    {
+        printf("- Left lane is unsafe\n");
+    }
+    if (cnt_unsafe_right_lane>0)
+    {
+        printf("- Right lane is unsafe\n");
+    }
+    
     // if current lane is lane 1, it only can move to right
     if (cur_lane == kLane1)
     {
@@ -101,8 +109,8 @@ int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, 
             safe_lane = cur_lane;
         }
     }
-    printf("safe_lane: %d \n", safe_lane);
-    printf("-----------------------------------\n");
+    printf("- safe_lane: %d \n\n", safe_lane+1);
+
     return safe_lane;
 }
 vector<double> next_ego_vehicle_status(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane)
