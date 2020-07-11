@@ -5,14 +5,14 @@
 In this project, the ego-vehicle will drive the highway with speed-limit. To complete the track faster, the ego-vehicle attempts to change lanes if the front vehicle is slow. To do that, this project composed of two steps: behavior planning, trajectory planning. 
 
  First, behavior planner gives the target lane and velocity.
-
  Second, if the lane is fine, trajectory planner will generate the spline based trajectory.
 
 This project is one of the [udacity self-driving car course projects](https://www.udacity.com/course/self-driving-car-engineer-nanodegree--nd013).  
+
 ## Result
 ![](video/LaneChange_9.gif)
-## Basic Build Instructions
 
+## Basic Build Instructions
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
@@ -26,7 +26,7 @@ To run the simulator on Mac/Linux, first make the binary file executable with th
 sudo chmod u+x {simulator_file_name}
 ```
 More details in this link
-[releases tab] (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  
+[releases tab](https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  
 
 ## Dependencies
 
