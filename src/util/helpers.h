@@ -6,7 +6,7 @@
 #include <vector>
 
 #define LANE_WIDTH 4
-
+#define SAMPLING_T 0.02
 // for convenience
 using std::string;
 using std::vector;

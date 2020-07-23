@@ -115,6 +115,19 @@ void BehaviorPlanning::cal_safe_lane(void)
     {
         safe_lane = cur_lane;
     }
+    if (safe_lane == left_lane)
+    {
+        behavior = kLaneChangeLeft;
+    }
+    else if (safe_lane == right_lane)
+    {
+        behavior = kLaneChangeRight;
+    }
+    else
+    {
+        behavior = kKeepLane;
+    }
+    
     printf("- safe_lane: %d \n\n", safe_lane + 1);
 }
 void BehaviorPlanning::obtain_behavior(void)
@@ -142,3 +155,8 @@ int BehaviorPlanning::get_target_lane(void)
 {
     return target_lane;
 }
+int BehaviorPlanning::get_behavior(void)
+{
+    return behavior;
+}
+

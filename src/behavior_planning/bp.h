@@ -18,7 +18,8 @@ public:
     void cal_safe_lane(void);
     double get_target_vel(void);
     int get_target_lane(void);
-    void obtain_behavior(void);    
+    void obtain_behavior(void);  
+    int get_behavior(void);  
 
 private:
 
@@ -28,11 +29,11 @@ private:
     nlohmann::json sensor_fusion;
     int target_lane;
     double target_vel;
-
     int close_status;
     double close_obs_v;
-
     int safe_lane;
+    int behavior;
+    
 };
 
 
@@ -41,6 +42,14 @@ enum CloseVehicleSyntax
     kFar = 0,
     kClose = 1,
 };
+
+enum BehaviorLists
+{
+    kKeepLane = 0,
+    kLaneChangeLeft = 1,
+    kLaneChangeRight,
+};
+
 
 // int check_close_obstacle(nlohmann::json sensor_fusion, double car_s, double car_d);
 // int check_safety_lane(nlohmann::json sensor_fusion, double car_s, double car_d, int cur_lane);

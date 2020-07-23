@@ -1,6 +1,6 @@
 #include "tp.h"
 
-#define SAMPLING_T 0.02
+
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -135,121 +135,55 @@ vector<vector<double>> TrajectoryPlanning::spline_trajectory_generation(void)
     }
     return {next_x_vals, next_y_vals};
 }
-vector<double> Vehicle::state_in(double t)
-{
-    vector<double> s(3);
-    vector<double> d(3);
-    s[0] = start_state[0];
-    s[1] = start_state[1];
-    s[2] = start_state[2];
-    d[0] = start_state[3];
-    d[1] = start_state[4];
-    d[2] = start_state[5];
 
-    vector<double> state = {
-        s[0] + (s[1] * t) + s[2] * t * t / 2.0,
-        s[1] + s[2] * t,
-        s[2],
-        d[0] + (d[1] * t) + d[2] * t * t / 2.0,
-        d[1] + d[2] * t,
-        d[2],
-    };
-    return state;
+vector<double> JMT(vector<double> &start, vector<double> &end, double T) {
+  /**
+   * Calculate the Jerk Minimizing Trajectory that connects the initial state
+   * to the final state in time T.
+   *
+   * @param start - the vehicles start location given as a length three array
+   *   corresponding to initial values of [s, s_dot, s_double_dot]
+   * @param end - the desired end state for vehicle. Like "start" this is a
+   *   length three array.
+   * @param T - The duration, in seconds, over which this maneuver should occur.
+   *
+   * @output an array of length 6, each value corresponding to a coefficent in 
+   *   the polynomial:
+   *   s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
+   *
+   * EXAMPLE
+   *   > JMT([0, 10, 0], [10, 10, 0], 1)
+   *     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
+   */
+  MatrixXd A = MatrixXd(3, 3);
+  A << T*T*T, T*T*T*T, T*T*T*T*T,
+       3*T*T, 4*T*T*T,5*T*T*T*T,
+       6*T, 12*T*T, 20*T*T*T;
+    
+  MatrixXd B = MatrixXd(3,1);     
+  B << end[0]-(start[0]+start[1]*T+.5*start[2]*T*T),
+       end[1]-(start[1]+start[2]*T),
+       end[2]-start[2];
+          
+  MatrixXd Ai = A.inverse();
+  
+  MatrixXd C = Ai*B;
+  
+  vector <double> result = {start[0], start[1], .5*start[2]};
+
+  for(int i = 0; i < C.size(); ++i) {
+    result.push_back(C.data()[i]);
+  }
+
+  return result;
 }
 
-/**
- * TODO: complete this function
- */
-vector<double> JMT(vector<double> &start, vector<double> &end, double T)
-{
-    MatrixXd A(3, 3);
-    A << T * T * T, T * T * T * T, T * T * T * T * T,
-        3 * T * T, 4 * T * T * T, 5 * T * T * T * T,
-        6 * T, 12 * T * T, 20 * T * T * T;
-    // std::cout << A << std::endl;
-    MatrixXd B(3, 1);
-    B << end[0] - start[0] - start[1] * T - start[2] / 2 * T * T,
-        end[1] - start[1] - start[2] * T,
-        end[2] - start[2];
-    // std::cout << B << std::endl;
-    MatrixXd Ai(3, 3);
-    Ai = A.inverse();
-    MatrixXd Coeff(3, 1);
-    Coeff = Ai * B;
-    std::cout << Coeff << std::endl;
-    vector<double> result = {start[0], start[1], start[2] / 2, Coeff.coeff(0, 0), Coeff.coeff(1, 0), Coeff.coeff(2, 0)};
-    return result;
-}
-double CalPoly(vector<double> coeff, double T)
+double CalQuintic(vector<double> coeff, double T)
 {
     double result = coeff[0] + coeff[1] * T + coeff[2] * T * T + coeff[3] * T * T * T + coeff[4] * T * T * T * T + coeff[5] * T * T * T * T * T;
     return result;
 }
-vector<double> PTG(vector<double> start_s,
-                   vector<double> start_d,
-                   Vehicle target_vehicle,
-                   vector<double> delta,
-                   double T)
-{
 
-    double timestep = SAMPLING_T;
-    double t;
-    vector<double> goal_s(3);
-    vector<double> goal_d(3);
-    vector<double> target_state;
-    vector<double> s_coefficients(3);
-    vector<double> d_coefficients(3);
-    vector<double> ptg_coefficients(6);
-    t = T - 4 * timestep;
-    while (t <= T + 4 * timestep)
-    {
-        target_state = target_vehicle.state_in(t);
-        goal_s[0] = target_state[0];
-        goal_s[1] = target_state[1];
-        goal_s[2] = target_state[2];
-        goal_d[0] = target_state[3];
-        goal_d[1] = target_state[4];
-        goal_d[2] = target_state[5];
-    }
-
-    s_coefficients = JMT(start_s, goal_s, T + 4 * timestep);
-    d_coefficients = JMT(start_d, goal_d, T + 4 * timestep);
-    ptg_coefficients[0] = s_coefficients[0];
-    ptg_coefficients[1] = s_coefficients[1];
-    ptg_coefficients[2] = s_coefficients[2];
-    ptg_coefficients[3] = d_coefficients[0];
-    ptg_coefficients[4] = d_coefficients[1];
-    ptg_coefficients[5] = d_coefficients[2];
-    return ptg_coefficients;
-
-    // target = predictions[target_vehicle]
-    //     # generate alternative goals
-    //     all_goals = []
-    //     timestep = 0.5
-    //     t = T - 4 * timestep
-    //     while t <= T + 4 * timestep:
-    //         target_state = np.array(target.state_in(t)) + np.array(delta)
-    //         goal_s = target_state[:3]
-    //         goal_d = target_state[3:]
-    //         goals = [(goal_s, goal_d, t)]
-    //         for _ in range(N_SAMPLES):
-    //             perturbed = perturb_goal(goal_s, goal_d)
-    //             goals.append((perturbed[0], perturbed[1], t))
-    //         all_goals += goals
-    //         t += timestep
-
-    //     # find best trajectory
-    //     trajectories = []
-    //     for goal in all_goals:
-    //         s_goal, d_goal, t = goal
-    //         s_coefficients = JMT(start_s, s_goal, t)
-    //         d_coefficients = JMT(start_d, d_goal, t)
-    //         trajectories.append(tuple([s_coefficients, d_coefficients, t]))
-
-    //     best = min(trajectories, key=lambda tr: calculate_cost(tr, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS))
-    //     calculate_cost(best, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS, verbose=True)
-    //     return best
-}
 
 void global2local_coord_conversion(vector<double> &ptx, vector<double> &pty, double ref_x, double ref_y, double ref_yaw)
 {
@@ -266,7 +200,7 @@ void global2local_coord_conversion(vector<double> &ptx, vector<double> &pty, dou
 
 void quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,
                                               nlohmann::json previous_path_x, nlohmann::json previous_path_y, double car_speed,
-                                              vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y)
+                                              vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y, int behavior)
 {
     static double pre_car_s;
     static double pre_car_sdot;
@@ -306,72 +240,100 @@ void quintic_polynomial_trajectory_generation(double car_x, double car_y, double
     double ref_s = end_path_s;
     double ref_d = end_path_d;
 
-    vector<double> prev_wp0 = getXY(ref_s - 2 * time_to_goal * car_speed, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    vector<double> prev_wp1 = getXY(ref_s - time_to_goal * car_speed, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    vector<double> ref_wp = getXY(ref_s, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    vector<double> next_wp0 = getXY(ref_s + time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    vector<double> next_wp1 = getXY(ref_s + 2 * time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    vector<double> next_wp2 = getXY(ref_s + 3 * time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    // vector<double> prev_wp0 = getXY(ref_s - 2 * time_to_goal * car_speed, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    // vector<double> prev_wp1 = getXY(ref_s - time_to_goal * car_speed, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    // vector<double> ref_wp = getXY(ref_s, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    // vector<double> next_wp0 = getXY(ref_s + time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    // vector<double> next_wp1 = getXY(ref_s + 2 * time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    // vector<double> next_wp2 = getXY(ref_s + 3 * time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
-    printf("ref_x: %lf ref_y: %lf\n", ref_x, ref_y);
-    printf("ref_x: %lf ref_y: %lf\n", ref_wp[0], ref_wp[1]);
+    // printf("ref_x: %lf ref_y: %lf\n", ref_x, ref_y);
+    // printf("ref_x: %lf ref_y: %lf\n", ref_wp[0], ref_wp[1]);
 
-    printf("-----------------------\n");
+    // printf("-----------------------\n");
 
-    ptpx.push_back(prev_wp0[0]);
-    ptpx.push_back(prev_wp1[0]);
-    ptpx.push_back(ref_x);
-    ptpx.push_back(next_wp0[0]);
-    ptpx.push_back(next_wp1[0]);
-    ptpx.push_back(next_wp2[0]);
+    // ptpx.push_back(prev_wp0[0]);
+    // ptpx.push_back(prev_wp1[0]);
+    // ptpx.push_back(ref_x);
+    // ptpx.push_back(next_wp0[0]);
+    // ptpx.push_back(next_wp1[0]);
+    // ptpx.push_back(next_wp2[0]);
 
-    ptpy.push_back(prev_wp0[1]);
-    ptpy.push_back(prev_wp1[1]);
-    ptpy.push_back(ref_y);
-    ptpy.push_back(next_wp0[1]);
-    ptpy.push_back(next_wp1[1]);
-    ptpy.push_back(next_wp2[1]);
-    global2local_coord_conversion(ptpx, ptpy, ref_x, ref_y, ref_yaw);
-    printf(" ptpx0: %lf, ptpy0: %lf\n", ptpx[0], ptpy[0]);
-    printf(" ptpx1: %lf, ptpy1: %lf\n", ptpx[1], ptpy[1]);
-    printf(" ptpx2: %lf, ptpy2: %lf\n", ptpx[2], ptpy[2]);
-    printf(" ptpx3: %lf, ptpy3: %lf\n", ptpx[3], ptpy[3]);
-    printf(" ptpx4: %lf, ptpy4: %lf\n", ptpx[4], ptpy[4]);
-    vector<vector<double>> local_frenet;
-    double tmp_yaw;
-    for (int i = 0; i < ptpx.size() - 1; i++)
-    {
-        tmp_yaw = atan2(ptpy[i + 1] - ptpy[i], ptpx[i + 1] - ptpx[i]);
-        printf("tmp_yaw: %lf\n", tmp_yaw);
-        vector<double> ptp_frenet = getFrenet(ptpx[i], ptpy[i], tmp_yaw, ptpx, ptpy);
-        local_frenet.push_back(ptp_frenet);
-        //printf("ptp_fs: %lf ptp_fd: %lf\n", ptp_frenet[0], ptp_frenet[1]);
-    }
+    // ptpy.push_back(prev_wp0[1]);
+    // ptpy.push_back(prev_wp1[1]);
+    // ptpy.push_back(ref_y);
+    // ptpy.push_back(next_wp0[1]);
+    // ptpy.push_back(next_wp1[1]);
+    // ptpy.push_back(next_wp2[1]);
+    // global2local_coord_conversion(ptpx, ptpy, ref_x, ref_y, ref_yaw);
+    // for (int i = 0; i < ptpx.size() - 1; i++)
+    // {
+    //     printf(" ptpx: %lf, ptpy: %lf\n", ptpx[i], ptpy[i]);
+    // }
+    // // printf(" ptpx0: %lf, ptpy0: %lf\n", ptpx[0], ptpy[0]);
+    // // printf(" ptpx1: %lf, ptpy1: %lf\n", ptpx[1], ptpy[1]);
+    // // printf(" ptpx2: %lf, ptpy2: %lf\n", ptpx[2], ptpy[2]);
+    // // printf(" ptpx3: %lf, ptpy3: %lf\n", ptpx[3], ptpy[3]);
+    // // printf(" ptpx4: %lf, ptpy4: %lf\n", ptpx[4], ptpy[4]);
+    // vector<vector<double>> local_frenet;
+    // double tmp_yaw;
+    // for (int i = 0; i < ptpx.size() - 1; i++)
+    // {
+    //     tmp_yaw = atan2(ptpy[i + 1] - ptpy[i], ptpx[i + 1] - ptpx[i]);
+        
+    //     vector<double> ptp_frenet = getFrenet(ptpx[i], ptpy[i], tmp_yaw, ptpx, ptpy);
+    //     local_frenet.push_back(ptp_frenet);
+    //     printf("ptp_fs: %lf ptp_fd: %lf\n", ptp_frenet[0], ptp_frenet[1]);
+    // }
 
-    for (int i = 0; i < local_frenet.size(); i++)
-    {
-        vector<double> tmp = local_frenet[i];
-    }
-    printf("----------------------------\n");
+    // for (int i = 0; i < local_frenet.size(); i++)
+    // {
+    //     vector<double> tmp = local_frenet[i];
+    // }
+    // printf("----------------------------\n");
     double passing_idx = 50 - previous_path_x.size();
-    double car_sdot = (car_s - pre_car_s) / (0.02 * passing_idx);
-    double car_sdotdot = (car_sdot - pre_car_sdot) / (0.02 * passing_idx);
-    double car_ddot = (car_d - pre_car_d) / (0.02 * passing_idx);
-    double car_ddotdot = (car_ddot - pre_car_ddot) / (0.02 * passing_idx);
+    double car_sdot = (car_s - pre_car_s) / (SAMPLING_T * passing_idx);
+    double car_sdotdot = (car_sdot - pre_car_sdot) / (SAMPLING_T * passing_idx);
+    double car_ddot = (car_d - pre_car_d) / (SAMPLING_T * passing_idx);
+    double car_ddotdot = (car_ddot - pre_car_ddot) / (SAMPLING_T * passing_idx);
 
-    // Generate polynomial function
-    double poly_gen_time = 4;
-    vector<double> start_s = {local_frenet[2][0], car_sdot, car_sdotdot};
-    vector<double> start_d = {local_frenet[2][1], car_ddot, car_ddotdot};
-    vector<double> goal_s = {local_frenet[3][0], car_sdot, 0};
-    vector<double> goal_d = {local_frenet[3][1], 0, 0};
-    printf("start_s: %lf start_d: %lf\n", local_frenet[2][0], local_frenet[2][1]);
-    printf("goal_s: %lf goal_d: %lf\n", local_frenet[3][0], local_frenet[3][1]);
-    // printf("tmp_s: %lf tmp_d: %lf\n", tmp[0], tmp[1]);
-    // printf("tmp_s: %lf tmp_d: %lf\n", tmp[0], tmp[1]);
+    // // Generate polynomial function
+    double poly_gen_time = 10;
+    // vector<double> start_s = {local_frenet[2][0], car_sdot, car_sdotdot};
+    // vector<double> start_d = {local_frenet[2][1], car_ddot, car_ddotdot};
+    // vector<double> goal_s = {local_frenet[3][0], car_sdot, 0};
+    // vector<double> goal_d = {local_frenet[3][1], 0, 0};
+    // // printf("start_s: %lf start_d: %lf\n", local_frenet[2][0], local_frenet[2][1]);
+    // // printf("goal_s: %lf goal_d: %lf\n", local_frenet[3][0], local_frenet[3][1]);
+    // // printf("tmp_s: %lf tmp_d: %lf\n", tmp[0], tmp[1]);
+    // // printf("tmp_s: %lf tmp_d: %lf\n", tmp[0], tmp[1]);
 
+
+
+    // vector<double> start_s = {0, car_sdot, car_sdotdot};
+    // vector<double> start_d = {0, car_ddot, car_ddotdot};
+    // vector<double> goal_s = {100, car_sdot, 0};
+    // vector<double> goal_d;
+    // if (behavior == kLaneChangeRight)
+    // {
+    //     goal_d = {4, 0, 0};
+    // }
+    // else if (behavior == kLaneChangeLeft)
+    // {
+    //      goal_d = {-4, 0, 0};
+    // }
+    // else
+    // {
+    //     goal_d = {0, 0, 0};
+    // }
+    vector<double> start_s = {10, 10, 0};
+    vector<double> start_d = {4, 0, 0};
+    vector<double> goal_s = {120, 10, 0};
+    vector<double> goal_d = {0, 0, 0};   
     vector<double> s_coeff = JMT(start_s, goal_s, poly_gen_time);
     vector<double> d_coeff = JMT(start_d, goal_d, poly_gen_time);
+    printf("scoeff: %lf, %lf, %lf,%lf, %lf, %lf \n", s_coeff[0], s_coeff[1], s_coeff[2],s_coeff[3], s_coeff[4], s_coeff[5]);
+    printf("dcoeff: %lf, %lf, %lf,%lf, %lf, %lf \n", d_coeff[0], d_coeff[1], d_coeff[2],d_coeff[3], d_coeff[4], d_coeff[5]);
 
     // vector<double> next_x_vals_poly;
     // vector<double> next_y_vals_poly;
@@ -426,17 +388,102 @@ void quintic_polynomial_trajectory_generation(double car_x, double car_y, double
     //   next_y_vals_poly.push_back(previous_path_y[i]);
     // }
     // double t_add_on = 0;
-    // printf("car_s: %lf \n", car_s);
+    // // printf("car_s: %lf \n", car_s);
+    // vector<double> local_s_trajectory;
+    // vector<double> local_d_trajectory;
+    // for (int t = 0; t <= poly_gen_time; t++)
+    // {
+    //   double next_s = CalQuintic(s_coeff, t_add_on);
+    //   double next_d = CalQuintic(d_coeff, t_add_on);
+    //   t_add_on = t_add_on + SAMPLING_T;
+    //   printf("next_s: %lf next_d: %lf \n", next_s, next_d);
+    // }
+
+
     // for (int i = 1; i <= 50 - previous_path_x.size(); i++)
     // {
-    //   double t_inc = 0.02;
-    //   t_add_on = t_add_on + t_inc;
-    //   double next_s = CalPoly(s_coeff, t_add_on);
-    //   double next_d = CalPoly(d_coeff, t_add_on);
-    //   next_s = next_s + start_frenet[0];
-    //   next_d = next_d + start_frenet[1];
 
+    //     if (ref_vel > car_speed)
+    //     {
+    //         car_speed += 0.1;
+    //     }
+    //     else if (ref_vel < car_speed)
+    //     {
+    //         car_speed -= 0.1;
+    //     }
+
+    //   double t_inc = SAMPLING_T;
+    //   t_add_on = t_add_on + t_inc;
+    //   double next_s = CalQuintic(s_coeff, t_add_on);
+    //   double next_d = CalQuintic(d_coeff, t_add_on);
+    //   next_s = next_s + ref_s;
+    //   next_d = next_d + ref_d;
     //   printf("next_s: %lf next_d: %lf \n", next_s, next_d);
     // }
     // printf("------------------------------\n");
 }
+// vector<double> PTG(vector<double> start_s,
+//                    vector<double> start_d,
+//                    Vehicle target_vehicle,
+//                    vector<double> delta,
+//                    double T)
+// {
+
+//     double timestep = SAMPLING_T;
+//     double t;
+//     vector<double> goal_s(3);
+//     vector<double> goal_d(3);
+//     vector<double> target_state;
+//     vector<double> s_coefficients(3);
+//     vector<double> d_coefficients(3);
+//     vector<double> ptg_coefficients(6);
+//     t = T - 4 * timestep;
+//     while (t <= T + 4 * timestep)
+//     {
+//         target_state = target_vehicle.state_in(t);
+//         goal_s[0] = target_state[0];
+//         goal_s[1] = target_state[1];
+//         goal_s[2] = target_state[2];
+//         goal_d[0] = target_state[3];
+//         goal_d[1] = target_state[4];
+//         goal_d[2] = target_state[5];
+//     }
+
+//     s_coefficients = JMT(start_s, goal_s, T + 4 * timestep);
+//     d_coefficients = JMT(start_d, goal_d, T + 4 * timestep);
+//     ptg_coefficients[0] = s_coefficients[0];
+//     ptg_coefficients[1] = s_coefficients[1];
+//     ptg_coefficients[2] = s_coefficients[2];
+//     ptg_coefficients[3] = d_coefficients[0];
+//     ptg_coefficients[4] = d_coefficients[1];
+//     ptg_coefficients[5] = d_coefficients[2];
+//     return ptg_coefficients;
+
+//     // target = predictions[target_vehicle]
+//     //     # generate alternative goals
+//     //     all_goals = []
+//     //     timestep = 0.5
+//     //     t = T - 4 * timestep
+//     //     while t <= T + 4 * timestep:
+//     //         target_state = np.array(target.state_in(t)) + np.array(delta)
+//     //         goal_s = target_state[:3]
+//     //         goal_d = target_state[3:]
+//     //         goals = [(goal_s, goal_d, t)]
+//     //         for _ in range(N_SAMPLES):
+//     //             perturbed = perturb_goal(goal_s, goal_d)
+//     //             goals.append((perturbed[0], perturbed[1], t))
+//     //         all_goals += goals
+//     //         t += timestep
+
+//     //     # find best trajectory
+//     //     trajectories = []
+//     //     for goal in all_goals:
+//     //         s_goal, d_goal, t = goal
+//     //         s_coefficients = JMT(start_s, s_goal, t)
+//     //         d_coefficients = JMT(start_d, d_goal, t)
+//     //         trajectories.append(tuple([s_coefficients, d_coefficients, t]))
+
+//     //     best = min(trajectories, key=lambda tr: calculate_cost(tr, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS))
+//     //     calculate_cost(best, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS, verbose=True)
+//     //     return best
+// }

@@ -98,6 +98,7 @@ int main()
           // 2. behavior planning: set next lane, next velocity for the ego-vehicle
           BehaviorPlanning bp = BehaviorPlanning(sensor_fusion, car_s, car_d, cur_lane);
           bp.obtain_behavior();
+          int behavior = bp.get_behavior();
           int target_lane = bp.get_target_lane();
           double target_vel = bp.get_target_vel();
 
@@ -105,6 +106,9 @@ int main()
           TrajectoryPlanning tp = TrajectoryPlanning(car_x, car_y, car_yaw, car_s, target_vel, target_lane,
                              previous_path_x, previous_path_y,
                              map_waypoints_s, map_waypoints_x, map_waypoints_y) ;
+          quintic_polynomial_trajectory_generation(car_x, car_y, car_yaw, car_s, car_d, target_vel, target_vel, end_path_s, end_path_d,
+                                               previous_path_x,  previous_path_y,  car_speed,
+                                              map_waypoints_s,  map_waypoints_x,  map_waypoints_y, behavior);
           vector<vector<double>> spline_trajectory = tp.spline_trajectory_generation();
 
 

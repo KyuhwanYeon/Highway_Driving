@@ -12,10 +12,9 @@ using std::vector;
 
 class Vehicle
 {
-    // constant acceleration vehicle
 public:
     Vehicle();
-    Vehicle(int lane, float s, float v, float a, string state = "CS");
+    Vehicle(int lane, float s,float d, float v, float a, string state = "CS");
 
 private:
 };
