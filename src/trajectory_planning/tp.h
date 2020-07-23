@@ -50,7 +50,7 @@ vector<vector<double>> spline_trajectory_generation(double car_x, double car_y, 
                                                     vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y);
 void global2local_coord_conversion(vector<double> &ptx, vector<double> &pty, double ref_x, double ref_y, double ref_yaw);
 
-void quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,
+vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,
                                               nlohmann::json previous_path_x, nlohmann::json previous_path_y, double car_speed,
                                               vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y, int behavior);
 #endif // LPP_H

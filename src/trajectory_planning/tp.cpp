@@ -67,6 +67,7 @@ vector<vector<double>> TrajectoryPlanning::spline_trajectory_generation(void)
 
     double passing_idx = 50 - previous_path_x.size();
     double car_sdot = (car_s - pre_car_s) / (SAMPLING_T * passing_idx);
+    printf("car_sdot: %lf\n", car_sdot);
     if (car_sdot <5)
     {
         car_sdot = 5; // threshold
@@ -98,6 +99,8 @@ vector<vector<double>> TrajectoryPlanning::spline_trajectory_generation(void)
         next_x_vals.push_back(previous_path_x[i]);
         next_y_vals.push_back(previous_path_y[i]);
     }
+
+
     double target_x = 2*offset_s + car_sdot*lane_change_duration; //offset_s+car_speed*lane_change_duration;
     double target_y = s(target_x);
     double target_dist = sqrt((target_x) * (target_x) + (target_y) * (target_y));
@@ -198,14 +201,14 @@ void global2local_coord_conversion(vector<double> &ptx, vector<double> &pty, dou
     }
 }
 
-void quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,
+vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,
                                               nlohmann::json previous_path_x, nlohmann::json previous_path_y, double car_speed,
                                               vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y, int behavior)
 {
-    static double pre_car_s;
-    static double pre_car_sdot;
-    static double pre_car_d;
-    static double pre_car_ddot;
+    static double q_pre_car_s;
+    static double q_pre_car_sdot;
+    static double q_pre_car_d;
+    static double q_pre_car_ddot;
     double time_to_goal = 1;
     int prev_size = previous_path_x.size();
     vector<double> ptsx;
@@ -231,6 +234,7 @@ void quintic_polynomial_trajectory_generation(double car_x, double car_y, double
         double ref_y_prev = previous_path_y[prev_size - 2];
         ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
     }
+    printf("prev_size: %d\n",prev_size);
     vector<double> ptpx;
     vector<double> ptpy;
     for (int i = 0; i < 5; i++)
@@ -240,80 +244,27 @@ void quintic_polynomial_trajectory_generation(double car_x, double car_y, double
     double ref_s = end_path_s;
     double ref_d = end_path_d;
 
-    // vector<double> prev_wp0 = getXY(ref_s - 2 * time_to_goal * car_speed, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    // vector<double> prev_wp1 = getXY(ref_s - time_to_goal * car_speed, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    // vector<double> ref_wp = getXY(ref_s, ref_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    // vector<double> next_wp0 = getXY(ref_s + time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    // vector<double> next_wp1 = getXY(ref_s + 2 * time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-    // vector<double> next_wp2 = getXY(ref_s + 3 * time_to_goal * car_speed, (2 + 4 * lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-
-    // printf("ref_x: %lf ref_y: %lf\n", ref_x, ref_y);
-    // printf("ref_x: %lf ref_y: %lf\n", ref_wp[0], ref_wp[1]);
-
-    // printf("-----------------------\n");
-
-    // ptpx.push_back(prev_wp0[0]);
-    // ptpx.push_back(prev_wp1[0]);
-    // ptpx.push_back(ref_x);
-    // ptpx.push_back(next_wp0[0]);
-    // ptpx.push_back(next_wp1[0]);
-    // ptpx.push_back(next_wp2[0]);
-
-    // ptpy.push_back(prev_wp0[1]);
-    // ptpy.push_back(prev_wp1[1]);
-    // ptpy.push_back(ref_y);
-    // ptpy.push_back(next_wp0[1]);
-    // ptpy.push_back(next_wp1[1]);
-    // ptpy.push_back(next_wp2[1]);
-    // global2local_coord_conversion(ptpx, ptpy, ref_x, ref_y, ref_yaw);
-    // for (int i = 0; i < ptpx.size() - 1; i++)
-    // {
-    //     printf(" ptpx: %lf, ptpy: %lf\n", ptpx[i], ptpy[i]);
-    // }
-    // // printf(" ptpx0: %lf, ptpy0: %lf\n", ptpx[0], ptpy[0]);
-    // // printf(" ptpx1: %lf, ptpy1: %lf\n", ptpx[1], ptpy[1]);
-    // // printf(" ptpx2: %lf, ptpy2: %lf\n", ptpx[2], ptpy[2]);
-    // // printf(" ptpx3: %lf, ptpy3: %lf\n", ptpx[3], ptpy[3]);
-    // // printf(" ptpx4: %lf, ptpy4: %lf\n", ptpx[4], ptpy[4]);
-    // vector<vector<double>> local_frenet;
-    // double tmp_yaw;
-    // for (int i = 0; i < ptpx.size() - 1; i++)
-    // {
-    //     tmp_yaw = atan2(ptpy[i + 1] - ptpy[i], ptpx[i + 1] - ptpx[i]);
-        
-    //     vector<double> ptp_frenet = getFrenet(ptpx[i], ptpy[i], tmp_yaw, ptpx, ptpy);
-    //     local_frenet.push_back(ptp_frenet);
-    //     printf("ptp_fs: %lf ptp_fd: %lf\n", ptp_frenet[0], ptp_frenet[1]);
-    // }
-
-    // for (int i = 0; i < local_frenet.size(); i++)
-    // {
-    //     vector<double> tmp = local_frenet[i];
-    // }
-    // printf("----------------------------\n");
     double passing_idx = 50 - previous_path_x.size();
-    double car_sdot = (car_s - pre_car_s) / (SAMPLING_T * passing_idx);
-    double car_sdotdot = (car_sdot - pre_car_sdot) / (SAMPLING_T * passing_idx);
-    double car_ddot = (car_d - pre_car_d) / (SAMPLING_T * passing_idx);
-    double car_ddotdot = (car_ddot - pre_car_ddot) / (SAMPLING_T * passing_idx);
+    double car_sdot = (car_s - q_pre_car_s) / (SAMPLING_T * passing_idx);
+    double car_sdotdot = (car_sdot - q_pre_car_sdot) / (SAMPLING_T * passing_idx);
+    double car_ddot = (car_d - q_pre_car_d) / (SAMPLING_T * passing_idx);
+    double car_ddotdot = (car_ddot - q_pre_car_ddot) / (SAMPLING_T * passing_idx);
+    // if (car_sdot <5)
+    // {
+    //     car_sdot = 5; // threshold
+    // }
+    q_pre_car_s = car_s;
+    q_pre_car_sdot = car_sdot;
+    q_pre_car_d = car_d;
+    q_pre_car_ddot = car_ddot;
+    
 
     // // Generate polynomial function
-    double poly_gen_time = 10;
-    // vector<double> start_s = {local_frenet[2][0], car_sdot, car_sdotdot};
-    // vector<double> start_d = {local_frenet[2][1], car_ddot, car_ddotdot};
-    // vector<double> goal_s = {local_frenet[3][0], car_sdot, 0};
-    // vector<double> goal_d = {local_frenet[3][1], 0, 0};
-    // // printf("start_s: %lf start_d: %lf\n", local_frenet[2][0], local_frenet[2][1]);
-    // // printf("goal_s: %lf goal_d: %lf\n", local_frenet[3][0], local_frenet[3][1]);
-    // // printf("tmp_s: %lf tmp_d: %lf\n", tmp[0], tmp[1]);
-    // // printf("tmp_s: %lf tmp_d: %lf\n", tmp[0], tmp[1]);
-
-
-
-    // vector<double> start_s = {0, car_sdot, car_sdotdot};
-    // vector<double> start_d = {0, car_ddot, car_ddotdot};
-    // vector<double> goal_s = {100, car_sdot, 0};
-    // vector<double> goal_d;
+    double poly_gen_time = 1;
+    vector<double> start_s = {0, car_sdot, 0};
+    vector<double> start_d = {0, car_ddot, 0};
+    vector<double> goal_s = {10, 3, 0};
+    vector<double> goal_d;
     // if (behavior == kLaneChangeRight)
     // {
     //     goal_d = {4, 0, 0};
@@ -326,79 +277,68 @@ void quintic_polynomial_trajectory_generation(double car_x, double car_y, double
     // {
     //     goal_d = {0, 0, 0};
     // }
-    vector<double> start_s = {10, 10, 0};
-    vector<double> start_d = {4, 0, 0};
-    vector<double> goal_s = {120, 10, 0};
-    vector<double> goal_d = {0, 0, 0};   
+    goal_d = {0, 0, 0};
     vector<double> s_coeff = JMT(start_s, goal_s, poly_gen_time);
     vector<double> d_coeff = JMT(start_d, goal_d, poly_gen_time);
-    printf("scoeff: %lf, %lf, %lf,%lf, %lf, %lf \n", s_coeff[0], s_coeff[1], s_coeff[2],s_coeff[3], s_coeff[4], s_coeff[5]);
-    printf("dcoeff: %lf, %lf, %lf,%lf, %lf, %lf \n", d_coeff[0], d_coeff[1], d_coeff[2],d_coeff[3], d_coeff[4], d_coeff[5]);
-
-    // vector<double> next_x_vals_poly;
-    // vector<double> next_y_vals_poly;
-    // double start_x = ptpx[1];
-    // double start_y = ptpy[1];
-    // double goal_x = ptpx[2];
-    // double goal_y = ptpy[2];
-    // printf(" ptpx0: %lf, ptpy0: %lf\n", ptpx[0], ptpy[0]);
-    // printf(" ptpx1: %lf, ptpy1: %lf\n", ptpx[1], ptpy[1]);
-    // printf(" ptpx2: %lf, ptpy2: %lf\n", ptpx[2], ptpy[2]);
-    // global2local_coord_conversion(ptpx, ptpy, ref_x, ref_y, ref_yaw);
-    // double start_yaw = atan2(ptpy[2] - ptpy[1], ptpx[2] - ptpx[1]);
-    // double goal_yaw = atan2(ptpy[3] - ptpy[2], ptpx[3] - ptpx[2]);
-    // printf("start yaw: %lf\n", start_yaw);
-    // printf("goal_yaw: %lf\n", goal_yaw);
-    // vector<double> start_frenet = getFrenet(start_x, start_y, start_yaw, ptpx, ptpy);
-    // vector<double> goal_frenet = getFrenet(goal_x, goal_y, goal_yaw, ptpx, ptpy);
-
-    // // Since simulator passing just 1 index, it can be passing 3, or 4 index!
-    // // We need to calculate how much passing index
-    // double passing_idx = 50 - previous_path_x.size();
-    // double car_sdot = (car_s - pre_car_s) / (0.02 * passing_idx);
-    // double car_sdotdot = (car_sdot - pre_car_sdot) / (0.02 * passing_idx);
-    // double car_ddot = (car_d - pre_car_d) / (0.02 * passing_idx);
-    // double car_ddotdot = (car_ddot - pre_car_ddot) / (0.02 * passing_idx);
-    // // printf("1. car_sdot: %lf, car_sdotdot: %lf, car_ddot: %lf, car_ddotdot: %lf\n",car_sdot,car_sdotdot,car_ddot,car_ddotdot);
-    // // printf("2. car_s: %lf, pre_car_s: %lf, car_d: %lf, pre_car_d: %lf\n",car_s, pre_car_s,car_d, pre_car_d);
-    // pre_car_s = car_s;
-    // pre_car_sdot = car_sdot;
-    // pre_car_d = car_d;
-    // pre_car_ddot = car_ddot;
-
-    // //coordinate move: start s -> 0, d->0
-    // double local_start_car_s = start_frenet[0] - start_frenet[0];
-    // double local_start_car_d = start_frenet[1] - start_frenet[1];
-    // double local_goal_car_s = goal_frenet[0] - start_frenet[0];
-    // double local_goal_car_d = goal_frenet[1] - start_frenet[1];
-
-    // // Generate polynomial function
-    // double poly_gen_time = 4;
-    // vector<double> start_s = {local_start_car_s, car_sdot, car_sdotdot};
-    // vector<double> start_d = {local_start_car_d, car_ddot, car_ddotdot};
-    // vector<double> goal_s = {local_goal_car_s, car_sdot, 0};
-    // vector<double> goal_d = {local_goal_car_d, 0, 0};
-
-    // vector<double> s_coeff = JMT(start_s, goal_s, poly_gen_time);
-    // vector<double> d_coeff = JMT(start_d, goal_d, poly_gen_time);
-
-    // for (int i = 0; i < previous_path_x.size(); i++)
+    // for (int i = 0; i< s_coeff.size(); i++)
     // {
-    //   next_x_vals_poly.push_back(previous_path_x[i]);
-    //   next_y_vals_poly.push_back(previous_path_y[i]);
-    // }
-    // double t_add_on = 0;
-    // // printf("car_s: %lf \n", car_s);
-    // vector<double> local_s_trajectory;
-    // vector<double> local_d_trajectory;
-    // for (int t = 0; t <= poly_gen_time; t++)
-    // {
-    //   double next_s = CalQuintic(s_coeff, t_add_on);
-    //   double next_d = CalQuintic(d_coeff, t_add_on);
-    //   t_add_on = t_add_on + SAMPLING_T;
-    //   printf("next_s: %lf next_d: %lf \n", next_s, next_d);
-    // }
+    //     printf("s_coeff: %lf\n",s_coeff[i]);
+    //     printf("d_coeff: %lf\n",d_coeff[i]);
 
+    // }
+    
+    printf("car_sdot: %lf\n",car_sdot);
+    printf("car_sdotdot: %lf\n",car_sdotdot);
+    printf("car_ddot: %lf\n",car_ddot);
+    printf("car_ddotdot: %lf\n",car_ddotdot);
+
+    vector<double> local_s_trajectory;
+    vector<double> local_d_trajectory;
+    for (double t = 0.02; t <= 0.02*50; t+=0.02)
+    {
+      double next_s = CalQuintic(s_coeff, t);
+      double next_d = CalQuintic(d_coeff, t);
+      local_s_trajectory.push_back(next_s);
+      local_d_trajectory.push_back(next_d);
+      printf("next_s: %.2lf next_d: %.2lf, t: %.2lf \n", next_s, next_d, t);
+    }
+    vector<double> local_refx;
+    vector<double> local_refy;
+    vector<double> local_refs;
+    for (int i = 0; i<=20; i++)
+    {
+        local_refx.push_back(10*i);
+        local_refy.push_back(0);
+        local_refs.push_back(20*i);
+    }
+    vector<double> local_x_trajectory;
+    vector<double> local_y_trajectory;    
+    for (int i = 0; i < local_s_trajectory.size(); i ++)
+    {
+        vector<double> local_xy = getXY(local_s_trajectory[i],local_d_trajectory[i],local_refs,local_refx,local_refy);
+        local_x_trajectory.push_back(local_xy[0]);
+        local_y_trajectory.push_back(local_xy[1]);
+        // printf("local x: %lf, local y: %lf\n",local_xy[0], local_xy[1]);
+    }
+
+    
+    vector<double> next_x_vals;
+    vector<double> next_y_vals;
+
+    for (int i = 0; i< local_x_trajectory.size(); i++)
+    {
+        double x_point = (local_x_trajectory[i] * cos(ref_yaw) - local_y_trajectory[i] * sin(ref_yaw));
+        double y_point = (local_x_trajectory[i] * sin(ref_yaw) + local_y_trajectory[i] * cos(ref_yaw));
+        next_x_vals.push_back(x_point);
+        next_y_vals.push_back(y_point);
+
+    }
+    return {next_x_vals, next_y_vals};
+
+
+
+           
+        
 
     // for (int i = 1; i <= 50 - previous_path_x.size(); i++)
     // {
