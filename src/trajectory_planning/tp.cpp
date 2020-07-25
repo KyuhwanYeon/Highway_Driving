@@ -87,11 +87,13 @@ vector<vector<double>> TrajectoryPlanning::spline_trajectory_generation(void)
     grid_y.push_back(next_wp2[1]);
 
     // call by reference, global 2 local coordinate conversion
-    global2local_coord_conversion(grid_x, grid_y, ref_x, ref_y, ref_yaw);
-
+   // global2local_coord_conversion(grid_x, grid_y, ref_x, ref_y, ref_yaw);
+    vector<vector<double>> local_xy  = global2local_coord_conversion(grid_x, grid_y, ref_x, ref_y, ref_yaw);
+    vector<double> local_x =local_xy[0];
+    vector<double> local_y = local_xy[1];
     // spline fitting
     tk::spline s;
-    s.set_points(grid_x, grid_y);
+    s.set_points(local_x, local_y);
     vector<double> next_x_vals;
     vector<double> next_y_vals;
     for (int i = 0; i < previous_path_x.size(); i++)
@@ -186,19 +188,20 @@ double CalQuintic(vector<double> coeff, double T)
     double result = coeff[0] + coeff[1] * T + coeff[2] * T * T + coeff[3] * T * T * T + coeff[4] * T * T * T * T + coeff[5] * T * T * T * T * T;
     return result;
 }
-
-
-void global2local_coord_conversion(vector<double> &ptx, vector<double> &pty, double ref_x, double ref_y, double ref_yaw)
+vector<vector<double>> global2local_coord_conversion(vector<double> ptx, vector<double> pty, double ref_x, double ref_y, double ref_yaw)
 {
+    vector<double> local_x;
+    vector<double> local_y;
     // local coorinate conversion, after shift, ref_x and ref_y is coordinate (0, 0)
     for (int i = 0; i < ptx.size(); i++)
     {
         //shift car reference angle to 0 degrees
         double shift_x = ptx[i] - ref_x;
         double shift_y = pty[i] - ref_y;
-        ptx[i] = (shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw));
-        pty[i] = (shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw));
+        local_x.push_back(shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw));
+        local_y.push_back(shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw));
     }
+    return {local_x, local_y};
 }
 
 vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,

@@ -106,15 +106,15 @@ int main()
           TrajectoryPlanning tp = TrajectoryPlanning(car_x, car_y, car_yaw, car_s, target_vel, target_lane,
                              previous_path_x, previous_path_y,
                              map_waypoints_s, map_waypoints_x, map_waypoints_y) ;
-          vector<vector<double>> quintic_trajectory = quintic_polynomial_trajectory_generation(car_x, car_y, car_yaw, car_s, car_d, target_vel, target_vel, end_path_s, end_path_d,
-                                               previous_path_x,  previous_path_y,  car_speed,
-                                              map_waypoints_s,  map_waypoints_x,  map_waypoints_y, behavior);
+          // vector<vector<double>> quintic_trajectory = quintic_polynomial_trajectory_generation(car_x, car_y, car_yaw, car_s, car_d, target_vel, target_vel, end_path_s, end_path_d,
+          //                                      previous_path_x,  previous_path_y,  car_speed,
+          //                                     map_waypoints_s,  map_waypoints_x,  map_waypoints_y, behavior);
           vector<vector<double>> spline_trajectory = tp.spline_trajectory_generation();
 
-          // msgJson["next_x"] = spline_trajectory[0];
-          // msgJson["next_y"] = spline_trajectory[1];
-          msgJson["next_x"] = quintic_trajectory[0];
-          msgJson["next_y"] = quintic_trajectory[1];
+          msgJson["next_x"] = spline_trajectory[0];
+          msgJson["next_y"] = spline_trajectory[1];
+          // msgJson["next_x"] = quintic_trajectory[0];
+          // msgJson["next_y"] = quintic_trajectory[1];
 
           auto msg = "42[\"control\"," + msgJson.dump() + "]";
 
