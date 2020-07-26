@@ -12,6 +12,7 @@
 using nlohmann::json;
 using std::vector;
 
+#define NUMTRJSIZE 50
 
 class TrajectoryPlanning
 {
@@ -48,8 +49,13 @@ double CalQuintic(vector<double> coeff, double T);
 vector<vector<double>> spline_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double ref_vel, int lane,
                                                     nlohmann::json previous_path_x, nlohmann::json previous_path_y,
                                                     vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y);
-vector<vector<double>> global2local_coord_conversion(vector<double> ptx, vector<double> pty, double ref_x, double ref_y, double ref_yaw);
+vector<vector<double>> global2local_coord_conversion(vector<double> global_x, vector<double> global_y, double cur_x, double cur_y, double cur_yaw);
 vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,
-                                              nlohmann::json previous_path_x, nlohmann::json previous_path_y, double car_speed,
-                                              vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y, int behavior);
+                                                                nlohmann::json previous_path_x, nlohmann::json previous_path_y, double car_speed,
+                                                                vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y, vector<double> map_waypoints_dx, vector<double> map_waypoints_dy, int behavior);
+vector<vector<double>> crop_local_map(double car_x, double car_y, double car_yaw, vector<double> map_waypoints_x, vector<double> map_waypoints_y,vector<double> map_waypoints_dx,vector<double> map_waypoints_dy, vector<double> map_waypoints_s);
+vector<double> interp_based_interval(vector<double> x, vector<double> y, 
+                                  double interval, int output_size) ;
+vector<double> interp_based_eval_x(vector<double> x, vector<double> y,
+                                   vector<double> eval_at_x);
 #endif // LPP_H

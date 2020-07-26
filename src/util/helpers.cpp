@@ -64,6 +64,7 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
 {
   int closestWaypoint = ClosestWaypoint(x, y, maps_x, maps_y);
 
+
   double map_x = maps_x[closestWaypoint];
   double map_y = maps_y[closestWaypoint];
 
@@ -71,7 +72,7 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
 
   double angle = fabs(theta - heading);
   angle = std::min(2 * pi() - angle, angle);
-
+  printf("closestWaypoint: %d, map_x: %lf, map_y: %lf,theta:%lf, heading: %lf, angle: %lf\n",closestWaypoint, map_x, map_y, theta, heading, angle);
   if (angle > pi() / 2)
   {
     ++closestWaypoint;
@@ -80,7 +81,7 @@ int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
       closestWaypoint = 0;
     }
   }
-
+  printf("closestWaypoint: %d, map_x: %lf, map_y: %lf,theta:%lf, heading: %lf, angle: %lf\n",closestWaypoint, map_x, map_y, theta, heading, angle);
   return closestWaypoint;
 }
 
@@ -161,25 +162,65 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 
   return {x, y};
 }
+vector<double> getXY_local(double s, double d,
+                           const vector<double> &maps_x,
+                           const vector<double> &maps_y)
+{
+
+  double map_s = 0;
+  vector<double> maps_s;
+  for (int i = 0; i < (int)maps_x.size(); i++)
+  {
+    std::pair<double, double> xy = {maps_x[i], maps_y[i]};
+    double dx = (i == 0) ? 0.0 : maps_x[i] - maps_x[i - 1];
+    double dy = (i == 0) ? 0.0 : maps_y[i] - maps_y[i - 1];
+    map_s += sqrt(dx * dx + dy * dy);
+    //printf("map_s: %lf\n",map_s);
+    maps_s.push_back(map_s);
+  }
+  int prev_wp = -1;
+
+  while (s > maps_s[prev_wp + 1] && (prev_wp < (int)(maps_s.size() - 1)))
+  {
+    ++prev_wp;
+  }
+
+  int wp2 = (prev_wp + 1) % maps_x.size();
+
+  double heading = atan2((maps_y[wp2] - maps_y[prev_wp]),
+                         (maps_x[wp2] - maps_x[prev_wp]));
+  // the x,y,s along the segment
+  double seg_s = (s - maps_s[prev_wp]);
+
+  double seg_x = maps_x[prev_wp] + seg_s * cos(heading);
+  double seg_y = maps_y[prev_wp] + seg_s * sin(heading);
+
+  double perp_heading = heading - pi() / 2;
+
+  double x = seg_x + d * cos(perp_heading);
+  double y = seg_y + d * sin(perp_heading);
+
+  return {x, y};
+}
 
 int cal_lane(double d)
 {
-    int lane;
-    if (d > 0 && d <= LANE_WIDTH)
-    {
-        lane = kLane1;
-    }
-    else if (d > LANE_WIDTH && d <= 2 * LANE_WIDTH)
-    {
-        lane = kLane2;
-    }
-    else if (d > 2 * LANE_WIDTH && d <= 3 * LANE_WIDTH)
-    {
-        lane = kLane3;
-    }
-    else
-    {
-        lane = kLaneOut;
-    }
-    return lane;
+  int lane;
+  if (d > 0 && d <= LANE_WIDTH)
+  {
+    lane = kLane1;
+  }
+  else if (d > LANE_WIDTH && d <= 2 * LANE_WIDTH)
+  {
+    lane = kLane2;
+  }
+  else if (d > 2 * LANE_WIDTH && d <= 3 * LANE_WIDTH)
+  {
+    lane = kLane3;
+  }
+  else
+  {
+    lane = kLaneOut;
+  }
+  return lane;
 }

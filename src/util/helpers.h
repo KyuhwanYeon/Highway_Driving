@@ -47,6 +47,9 @@ vector<double> getFrenet(double x, double y, double theta,
 vector<double> getXY(double s, double d, const vector<double> &maps_s, 
                      const vector<double> &maps_x, 
                      const vector<double> &maps_y) ;
+vector<double> getXY_local(double s, double d, 
+                     const vector<double> &maps_x, 
+                     const vector<double> &maps_y) ;                     
 int cal_lane(double d);
 
 enum LaneList
