@@ -16,7 +16,7 @@ using std::vector;
 
 class TrajectoryPlanning
 {
-   
+
 public:
     TrajectoryPlanning(double car_x_, double car_y_, double car_yaw_, double car_s_, double ref_vel_, int lane_,
                        nlohmann::json previous_path_x_, nlohmann::json previous_path_y_,
@@ -27,9 +27,9 @@ public:
 
 private:
     double car_x; // m
-    double car_y; // m 
+    double car_y; // m
     double car_yaw;
-    double car_s; // m
+    double car_s;   // m
     double ref_vel; // m/s
     int lane;
     nlohmann::json previous_path_x;
@@ -37,6 +37,23 @@ private:
     vector<double> map_waypoints_s;
     vector<double> map_waypoints_x;
     vector<double> map_waypoints_y;
+};
+
+class QuinticPolynomial
+{
+public:
+    QuinticPolynomial(vector<double> _start, vector<double> _end, double _T);
+
+    double cal_poly(double t);
+    double cal_first_derivative(double t);
+    double cal_second_derivative(double t);
+    double cal_third_derivative(double t);
+
+private:
+    vector<double> start;
+    vector<double> end;
+    vector<double> coeff;
+    double T;
 };
 
 vector<double> JMT(vector<double> &start, vector<double> &end, double T);
@@ -53,9 +70,9 @@ vector<vector<double>> global2local_coord_conversion(vector<double> global_x, ve
 vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, double car_y, double car_yaw, double car_s, double car_d, double ref_vel, int lane, double end_path_s, double end_path_d,
                                                                 nlohmann::json previous_path_x, nlohmann::json previous_path_y, double car_speed,
                                                                 vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y, vector<double> map_waypoints_dx, vector<double> map_waypoints_dy, int behavior);
-vector<vector<double>> crop_local_map(double car_x, double car_y, double car_yaw, vector<double> map_waypoints_x, vector<double> map_waypoints_y,vector<double> map_waypoints_dx,vector<double> map_waypoints_dy, vector<double> map_waypoints_s);
-vector<double> interp_based_interval(vector<double> x, vector<double> y, 
-                                  double interval, int output_size) ;
+vector<vector<double>> crop_local_map(double car_x, double car_y, double car_yaw, vector<double> map_waypoints_x, vector<double> map_waypoints_y, vector<double> map_waypoints_dx, vector<double> map_waypoints_dy, vector<double> map_waypoints_s);
+vector<double> interp_based_interval(vector<double> x, vector<double> y,
+                                     double interval, int output_size);
 vector<double> interp_based_eval_x(vector<double> x, vector<double> y,
                                    vector<double> eval_at_x);
 #endif // LPP_H

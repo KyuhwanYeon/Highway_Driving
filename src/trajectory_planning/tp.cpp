@@ -205,7 +205,7 @@ vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, do
                                                                 nlohmann::json previous_path_x, nlohmann::json previous_path_y, double car_speed,
                                                                 vector<double> map_waypoints_s, vector<double> map_waypoints_x, vector<double> map_waypoints_y, vector<double> map_waypoints_dx, vector<double> map_waypoints_dy, int behavior)
 {
-    ref_vel =mph2ms(ref_vel);
+    ref_vel = mph2ms(ref_vel);
     // 1. crop global map to local map to reduce the map size
     printf("car_yaw: %lf \n ", car_yaw);
     vector<vector<double>> crop_map = crop_local_map(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y, map_waypoints_dx, map_waypoints_dy, map_waypoints_s);
@@ -297,7 +297,7 @@ vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, do
         ref_s_prev = ref_s - s_dot * SAMPLING_T;
     }
     printf("car_s: %lf, ref_s: %lf, car_d: %lf, ref_d: %lf\n", car_s, ref_s, car_d, ref_d);
-    
+
     // if (car_sdot <5)
     // {
     //     car_sdot = 5; // threshold
@@ -347,7 +347,7 @@ vector<vector<double>> quintic_polynomial_trajectory_generation(double car_x, do
     printf("duration: %lf, ref_d: %lf , goal_d: %lf, lane: %d\n", duration, ref_d, (double)(2 + 4 * lane), lane);
 
     vector<double> best_s_trajectory, best_d_trajectory, best_x_trajectory, best_y_trajectory;
-    for (double t = 1; t <= duration; t ++)
+    for (double t = 1; t <= duration; t++)
     {
         double next_s = CalQuintic(s_coeff, t);
         double next_d = CalQuintic(d_coeff, t);
@@ -507,4 +507,45 @@ vector<double> interp_based_eval_x(vector<double> x, vector<double> y,
         output.push_back(s(x));
     }
     return output;
+}
+
+QuinticPolynomial::QuinticPolynomial(vector<double> _start, vector<double> _end, double _T) : start(_start), end(_end), T(_T)
+{
+    MatrixXd A = MatrixXd(3, 3);
+    A << T * T * T, T * T * T * T, T * T * T * T * T,
+        3 * T * T, 4 * T * T * T, 5 * T * T * T * T,
+        6 * T, 12 * T * T, 20 * T * T * T;
+
+    MatrixXd B = MatrixXd(3, 1);
+    B << end[0] - (start[0] + start[1] * T + .5 * start[2] * T * T),
+        end[1] - (start[1] + start[2] * T),
+        end[2] - start[2];
+
+    MatrixXd Ai = A.inverse();
+    MatrixXd C = Ai * B;
+
+    coeff.push_back(start[0]);
+    coeff.push_back(start[1]);
+    coeff.push_back(.5 *start[2]);
+    for (int i = 0; i < C.size(); ++i)
+    {
+        coeff.push_back(C.data()[i]);
+    }
+};
+
+double QuinticPolynomial::cal_poly(double t)
+{
+    return coeff[0] + coeff[1] * t + coeff[2] * t * t + coeff[3] * t * t * t + coeff[4] * t * t * t * t + coeff[5] * t * t * t * t * t;
+}
+double QuinticPolynomial::cal_first_derivative(double t)
+{
+    return coeff[1] + 2 * coeff[2] * t + 3 * coeff[3] * t * t + 4 * coeff[4] * t * t * t + 5 * coeff[5] * t * t * t * t;
+}
+double QuinticPolynomial::cal_second_derivative(double t)
+{
+    return 2 * coeff[2]+ 6 * coeff[3] * t + 12 * coeff[4] * t * t + 20 * coeff[5] * t * t * t;
+}
+double QuinticPolynomial::cal_third_derivative(double t)
+{
+    return 6 * coeff[3] + 24 * coeff[4] * t + 60 * coeff[5] * t * t;
 }
