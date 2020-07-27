@@ -56,6 +56,34 @@ private:
     double T;
 };
 
+class Frenet_path
+{
+    public:
+    Frenet_path(){};
+    vector<double> t;
+    vector<double> s;
+    vector<double> s_d;
+    vector<double> s_dd;
+    vector<double> s_ddd;
+    vector<double> d;
+    vector<double> d_d;
+    vector<double> d_dd;
+    vector<double> d_ddd;
+    double cost_d;
+    double cost_v;
+    double cost_t;
+    double cost_total;
+
+    vector<double> x;
+    vector<double> y;
+    vector<double> yaw;
+    vector<double> ds;
+    vector<double> curvature;
+};
+
+
+
+
 vector<double> JMT(vector<double> &start, vector<double> &end, double T);
 // vector<double> PTG(vector<double> start_s,
 //                    vector<double> start_d,
