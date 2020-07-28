@@ -56,6 +56,28 @@ private:
     double T;
 };
 
+typedef struct
+{
+    vector<double> t;
+    vector<double> s;
+    vector<double> s_d;
+    vector<double> s_dd;
+    vector<double> s_ddd;
+    vector<double> d;
+    vector<double> d_d;
+    vector<double> d_dd;
+    vector<double> d_ddd;
+    double cost_d;
+    double cost_v;
+    double cost_t;
+    double cost_total;
+
+    vector<double> x;
+    vector<double> y;
+    vector<double> yaw;
+    vector<double> ds;
+    vector<double> curvature; 
+} FrenetPath;
 class Frenet_path
 {
     public:
